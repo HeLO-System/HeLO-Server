@@ -1,0 +1,15 @@
+[{
+    "name": "Scores",
+    "paths": [
+        "scores",
+        "scores?name=91.",
+        "scores?name=91.&select=name,score"        
+    ]
+}, {
+    "name": "Matches",
+    "paths": [
+        "matches?clan1=91.&clan2=38.",
+        "matches?clan1=91.&clan2=38.&caps1=4&caps2=1",
+        "matches?clan1=91.&clan2=38.&caps1=4&caps2=1&select=delta1,delta2"
+    ]
+}]
