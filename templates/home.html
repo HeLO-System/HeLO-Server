@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>HeLO API</title>
+    <title>MongoREST</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='style.css') }}">
   </head>
   <body>
     <div class="codeheader">
-      HeLO API - access the Hell Let Loose Elo system
+      Welcome to MongoREST!
     </div>
     <div id="codebox">
-      Here are some examples to show how the API can be accessed.
+      Here are some examples to show how the API can be used.
       <br/><br/>      
       {% for api in apis %}
         <b>{{ api['name'] }}</b>

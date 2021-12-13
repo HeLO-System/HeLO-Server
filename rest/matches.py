@@ -1,75 +1,96 @@
 # rest/matches.py
 from flask import request
 from flask_restful import Resource
-from logic.calculations import *
-from database.scores import Scores
+from flask_jwt_extended import jwt_required
+from mongoengine.errors import NotUniqueError
+from mongoengine.queryset.visitor import Q
+from database.models import Match
 from ._common import *
 
 
-# helper for getting data for the clan name in the given input parameter
-def get_score_for_arg(arg):
-    name = request.args.get(arg)
-    clan = Scores.objects(name=name).only("score").first()
-    if clan == None: 
-        return name, None, f"Error retrieving score for clan: {name}"
+class MatchApi(Resource):
+    
+    # get by object id
+    def get(self, oid):
+        try:
+            match = Match.objects.get(id=oid)
+            return get_response(match)
+        except:
+            return handle_error(f"error getting match from database, match not found by oid: {oid}")
         
-    return name, clan.score, None
+
+    # update match by object id
+    @jwt_required()
+    def put(self, oid):
+        try:
+            match = Match.objects.get(id=oid)        
+            try:
+                match.update(**request.get_json())
+                return '', 204
+            except:
+                return handle_error(f"error updating match in database: {oid}")
+        except:
+            return handle_error(f"error updating match in database, match not found by oid: {oid}")
+
+    # update match by object id
+    @jwt_required()
+    def delete(self, oid):
+        try:
+            match = Match.objects.get(id=oid)        
+            try:
+                match = match.delete()
+                return '', 204
+            except:
+                return handle_error(f"error deleting match in database: {oid}")
+        except:
+            return handle_error(f"error deleting match in database, match not found by oid: {oid}")
+        
 
 
-############
-# REST API #
-############
 class MatchesApi(Resource):
     
-    
-    #######
-    # GET #
-    #######
+    # get all or filtered by match id
     def get(self):
-        if len(set(request.args) & {"clan1", "clan2"}) != 2: 
-            return get_error(f'Must provide parameters clan1, clan2 and optional result parameters caps1, caps2!')
-        
-        # get selection fields
-        fields = request.args.get('select')            
-        if fields != None: fields = fields.split(",")
-        
-        # get scores
-        clan1, score1, error1 = get_score_for_arg('clan1')
-        clan2, score2, error2 = get_score_for_arg('clan2')
+        try:
+            select = request.args.get('select')
+            match_id = request.args.get('match_id')
+            clan1_id = request.args.get('clan1_id')
+            coop1_id = request.args.get('coop1_id')
+            clan2_id = request.args.get('clan2_id')
+            coop2_id = request.args.get('coop2_id')
+            conf1 = request.args.get('conf1')
+            conf2 = request.args.get('conf2')
 
-        if error1 != None: return get_response({ "error": error1 })
-        if error2 != None: return get_response({ "error": error2 })
+            fields = select.split(',') if select != None else []
+                
+            where = Q()
+            if match_id != None: where &= Q(match_id=match_id)
+            if clan1_id != None: where &= Q(clan1_id=clan1_id)
+            if coop1_id != None: where &= Q(coop1_id=coop1_id)
+            if clan2_id != None: where &= Q(clan2_id=clan2_id)
+            if coop2_id != None: where &= Q(coop2_id=coop2_id)
+            if conf1 != None: where &= Q(conf1=conf1)
+            if conf2 != None: where &= Q(conf2=conf2)
 
-        body = { "clan1": clan1, "clan2": clan2, "score1": score1, "score2": score2 }
-        
-        # get probs
-        if fields == None or len(set(fields) & {"prob1", "prob2"}) > 0:
-            prob1, prob2 = get_win_prob(score1, score2)
-            
-            body["prob1"] = prob1
-            body["prob2"] = prob2
-        
-        # get new scores and deltas
-        if fields == None or len(set(fields) & {"score1_new", "score2_new", "delta1", "delta2"}) > 0:
-            caps1 = request.args.get('caps1')
-            caps2 = request.args.get('caps2')
+            matches = Match.objects(where).only(*fields)
                         
-            if caps1 != None and caps2 != None:
-                body["caps1"] = caps1 = int(caps1)
-                body["caps2"] = caps2 = int(caps2)
-                
-                score1_new, score2_new, error = get_new_scores(score1, score2, caps1, caps2)
-                
-                if error == None:            
-                    body["score1_new"] = score1_new
-                    body["score2_new"] = score2_new
-                    body["delta1"] = score1 - score1_new
-                    body["delta2"] = score2 - score2_new
+            return get_response(matches)
         
-        # only keep values that have been selected
-        if fields != None:
-            body = { key: body[key] for key in body if key in fields }
-        
-        return get_response(body)
+        except:
+            return handle_error(f'error getting matches')
 
-        
+
+    # add new match
+    @jwt_required()
+    def post(self):
+        try:
+            match = Match(**request.get_json())
+            try:
+                match = match.save()
+                return get_response({ "match_id": match.match_id })
+            except NotUniqueError:
+                return handle_error(f"match already exists in database: {match.match_id}")
+            except:
+                return handle_error(f"error creating match in database: {match.match_id}")
+        except:
+            return handle_error(f'error creating match in database')

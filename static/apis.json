@@ -1,4 +1,26 @@
 [{
+    "name": "User",
+    "paths": [
+        "user/407302122921656340"
+    ]
+}, {
+    "name": "Clans",
+    "paths": [
+        "clans",
+        "clans?tag=StDb",
+        "clan/6194ff047b4c3958a10a742d"
+    ]
+}, {
+    "name": "Events",
+    "paths": [
+        "events"
+    ]
+}, {
+    "name": "Matches",
+    "paths": [
+        "matches"
+    ]
+}, {
     "name": "Scores",
     "paths": [
         "scores",
@@ -6,10 +28,10 @@
         "scores?name=91.&select=name,score"        
     ]
 }, {
-    "name": "Matches",
+    "name": "Simulations",
     "paths": [
-        "matches?clan1=91.&clan2=38.",
-        "matches?clan1=91.&clan2=38.&caps1=4&caps2=1",
-        "matches?clan1=91.&clan2=38.&caps1=4&caps2=1&select=delta1,delta2"
+        "simulations?clan1=91.&clan2=38.",
+        "simulations?clan1=91.&clan2=38.&caps1=4&caps2=1",
+        "simulations?clan1=91.&clan2=38.&caps1=4&caps2=1&select=delta1,delta2"
     ]
 }]

@@ -1,7 +1,8 @@
 # rest/common.py
 import json
+import logging
+import traceback
 from flask import request, Response
-from database.models import Clan
             
 
 # build response
@@ -15,5 +16,6 @@ def get_response(obj):
 
 
 # build error json
-def get_error(text): 
+def handle_error(text): 
+    logging.error(traceback.format_exc())
     return { "error": text }, 200
