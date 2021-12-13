@@ -1,9 +1,11 @@
 # HeLO.py
 import json, os, logging
 from flask import Flask, render_template
+from flask_bcrypt import Bcrypt
 from flask_restful import Api
-from database._db import initialize_db
+from flask_jwt_extended import JWTManager
 from rest._routes import initialize_routes
+from database._db import initialize_db
 
 
 # init components
@@ -20,6 +22,11 @@ DB = {
 app.config['MONGODB_HOST'] = ('mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME)s') % DB
 initialize_db(app)
 initialize_routes(Api(app))
+
+bcrypt = Bcrypt(app)
+
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+jwt = JWTManager(app)
 
 
 # home page: offer some explanation how to use the API
