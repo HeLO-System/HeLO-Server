@@ -51,6 +51,7 @@ class Match(db.Document):
     side2      = db.StringField()
     caps1      = db.IntField()
     caps2      = db.IntField()
+    players    = db.IntField()
     map        = db.StringField()
     date       = db.DateTimeField()
     duration   = db.IntField()
