@@ -3,7 +3,7 @@ from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError
-from database.models import Clan
+from database.models import Clan, User
 from ._common import *
 
 
@@ -79,4 +79,3 @@ class ClansApi(Resource):
                 return handle_error(f"error creating clan in database: {clan.tag}")
         except:
             return handle_error(f'error creating clans in database')
-

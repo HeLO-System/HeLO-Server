@@ -8,7 +8,7 @@ from flask_bcrypt import generate_password_hash, check_password_hash
    
 class User(db.Document):
     userid = db.StringField(required=True, unique=True)
-    pin = db.StringField(required=True, min_length=1)
+    pin = db.StringField()
     name = db.StringField()
     role = db.StringField()
     clan = db.StringField()

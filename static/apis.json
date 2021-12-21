@@ -1,7 +1,9 @@
 [{
     "name": "User",
     "paths": [
-        "user/407302122921656340"
+        "user/407302122921656340",
+        "users",
+        "users?name_like=Maul"
     ]
 }, {
     "name": "Clans",
@@ -25,7 +27,7 @@
     "paths": [
         "scores",
         "scores?name=91.",
-        "scores?name=91.&select=name,score"        
+        "scores?name=91.&select=name,score"
     ]
 }, {
     "name": "Simulations",
