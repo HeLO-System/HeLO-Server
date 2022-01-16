@@ -4,7 +4,8 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError
 from mongoengine.queryset.visitor import Q
-from database.models import Match
+from database.models import Clan, Match, Scores
+from logic.calculations import get_new_scores
 from ._common import *
 
 
@@ -94,6 +95,47 @@ class MatchesApi(Resource):
         try:
             match = Match(**request.get_json())
             try:
+                # if the match is confirmed and the score has not been posted before, calculate the new scores
+                if not match.score_posted and not empty(match.conf1) and not empty(match.conf2):
+                    # mongoengine does not support transactions!!! :(
+                    
+                    # get clans/coop partners by id or by tag
+                    clan1 = Clan.objects(id=match.clan1_id).first() if match.clan1_id != None else Clan.objects(tag=match.clan1).first()
+                    
+                    if match.coop1_id != None:
+                        coop1 = Clan.objects(id=match.coop1_id).first() if match.coop1_id != None else Clan.objects(tag=match.coop1).first()
+                        
+                    clan2 = Clan.objects(id=match.clan2_id).first() if match.clan2_id != None else Clan.objects(tag=match.clan2).first()
+                    
+                    if match.coop2_id != None:
+                        coop2 = Clan.objects(id=match.coop2_id).first() if match.coop2_id != None else Clan.objects(tag=match.coop2).first()
+                    
+                    clan1.init()
+                    clan2.init()
+                    
+                    # get initial score for clans/coop partners
+                    score_clan1 = Scores.new_from_match(match, clan1)
+                    score_clan2 = Scores.new_from_match(match, clan2)                    
+                    # calculate new values
+                    clan1.matches += 1
+                    clan2.matches += 1
+                    clan1.score, clan2.score, error = get_new_scores(score1=clan1.score, score2=clan2.score, caps1=match.caps1, caps2=match.caps2, matches1=clan1.matches, matches2=clan2.matches, c=match.factor, number_of_players=match.players)
+                    # update initial scores with new values
+                    score_clan1.score = clan1.score
+                    score_clan1.count = clan1.matches
+                    score_clan2.score = clan2.score
+                    score_clan2.count = clan2.matches
+                    if error != None:
+                        logging.error(f"error calculating scores: {error}")
+                    else:
+                        # save data to db
+                        clan1.save()
+                        clan2.save()
+                        score_clan1.save()
+                        score_clan2.save()
+                        match.score_posted = True
+                
+                # save match data           
                 match = match.save()
                 return get_response({ "match_id": match.match_id })
             except NotUniqueError:

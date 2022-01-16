@@ -2,17 +2,17 @@
 from flask import request
 from flask_restful import Resource
 from logic.calculations import *
-from database.models import Score
+from database.models import Clan, Scores
 from ._common import *
 
 # helper for getting data for the clan name in the given input parameter
-def get_score_for_arg(arg):
-    name = request.args.get(arg)
-    clan = Score.objects(name=name).only("score").first()
-    if clan == None: 
-        return name, None, f"Error retrieving score for clan: {name}"
+def get_score_for_arg(arg):   
+    clan : Clan = Clan.objects(clan=request.args.get(arg))
+    scores = Scores.objects(clan=clan.id).order_by('-count').only("score").first()
+    if scores == None: 
+        return clan.tag, None, f"Error retrieving score for clan: {clan.tag}"
         
-    return name, clan.score, None
+    return clan.tag, scores.score, None
 
 
 class SimulationsApi(Resource):

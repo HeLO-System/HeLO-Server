@@ -26,8 +26,7 @@
     "name": "Scores",
     "paths": [
         "scores",
-        "scores?name=91.",
-        "scores?name=91.&select=name,score"
+        "scores?clan=StDb"
     ]
 }, {
     "name": "Simulations",

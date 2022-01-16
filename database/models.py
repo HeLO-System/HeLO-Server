@@ -26,7 +26,13 @@ class Clan(db.Document):
     name = db.StringField()
     flag = db.StringField()
     invite = db.StringField()
+    score = db.IntField()
+    matches = db.IntField()
     conf = db.StringField()
+    
+    def init(self):
+        if self.matches == None: self.matches = 0
+        if self.score   == None: self.score = 500
 
 
 class Event(db.Document):
@@ -38,35 +44,40 @@ class Event(db.Document):
 
 
 class Match(db.Document):
-    match_id   = db.StringField(required=True, unique=True)
-    clan1_id   = db.StringField()
-    clan1      = db.StringField()
-    coop1_id   = db.StringField()
-    coop1      = db.StringField()
-    clan2_id   = db.StringField()
-    clan2      = db.StringField()
-    coop2_id   = db.StringField()
-    coop2      = db.StringField()
-    side1      = db.StringField()
-    side2      = db.StringField()
-    caps1      = db.IntField()
-    caps2      = db.IntField()
-    players    = db.IntField()
-    map        = db.StringField()
-    date       = db.DateTimeField()
-    duration   = db.IntField()
-    factor     = db.DecimalField()
-    event      = db.StringField()
-    conf1      = db.StringField()
-    conf2      = db.StringField()
+    match_id     = db.StringField(required=True, unique=True)
+    clan1_id     = db.StringField()
+    clan1        = db.StringField()
+    coop1_id     = db.StringField()
+    coop1        = db.StringField()
+    clan2_id     = db.StringField()
+    clan2        = db.StringField()
+    coop2_id     = db.StringField()
+    coop2        = db.StringField()
+    side1        = db.StringField()
+    side2        = db.StringField()
+    caps1        = db.IntField()
+    caps2        = db.IntField()
+    players      = db.IntField()
+    map          = db.StringField()
+    date         = db.DateTimeField()
+    duration     = db.IntField()
+    factor       = db.DecimalField()
+    event        = db.StringField()
+    conf1        = db.StringField()
+    conf2        = db.StringField()
+    score_posted = db.BooleanField()
 
 
-class Score(db.Document):
-    name = db.StringField(required=True)
-    auth = db.StringField(required=True)
-    score = db.IntField()
-    checksum = db.IntField()
-    games = db.IntField()
-    history = db.ListField(db.StringField())
-    score_history = db.ListField(db.IntField())
+class Scores(db.Document):
+    clan = db.StringField(required=True)
+    count = db.IntField(required=True)
+    match = db.StringField(required=True)
+    score = db.IntField(required=True)
+    score_before = db.IntField(required=True)
     
+    def new_from_match(match:Match, clan:Clan):
+        score = Scores()
+        score.match = match.match_id
+        score.clan = str(clan.id)
+        score.score_before = clan.score
+        return score

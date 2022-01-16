@@ -19,3 +19,7 @@ def get_response(obj):
 def handle_error(text): 
     logging.error(traceback.format_exc())
     return { "error": text }, 200
+
+
+# check for None or empty string
+def empty(s): return s == None or s == ""

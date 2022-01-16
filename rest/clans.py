@@ -22,7 +22,8 @@ class ClanApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
-            clan = Clan.objects.get(id=oid)        
+            clan = Clan.objects.get(id=oid)
+            # todo - validate
             try:
                 clan.update(**request.get_json())
                 return '', 204
@@ -70,6 +71,7 @@ class ClansApi(Resource):
     def post(self):
         try:
             clan = Clan(**request.get_json())
+            # todo - validate
             try:
                 clan = clan.save()
                 return get_response({ "id": clan.id })

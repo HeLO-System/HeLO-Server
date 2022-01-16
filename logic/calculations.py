@@ -1,4 +1,5 @@
 # logic/calculations.py
+import logging
 import math
 
 
@@ -25,7 +26,7 @@ def get_win_prob(score1, score2):
         return round(1 - prob, 3), prob
 
 
-def get_new_scores(score1, score2, caps1, caps2, a1=40, a2=40, c=1, number_of_players=50):
+def get_new_scores(score1, score2, caps1, caps2, matches1, matches2, c=1, number_of_players=50):
     """Calculates the new HeLO score based on a given game score.
 
     Args:
@@ -44,6 +45,8 @@ def get_new_scores(score1, score2, caps1, caps2, a1=40, a2=40, c=1, number_of_pl
         int, int, str: new HeLO score for team 1 and team 2, possible error
     """
     try:
+        a1 = 20 if matches1 != None and matches1 > 30 else 40
+        a2 = 20 if matches2 != None and matches2 > 30 else 40
         # calculate the probabilities for the teams
         prob1, prob2 = get_win_prob(score1, score2)
         # check if points don't exceed maximum points, which are possible in HLL
@@ -51,8 +54,8 @@ def get_new_scores(score1, score2, caps1, caps2, a1=40, a2=40, c=1, number_of_pl
         # calulate the new HeLO scores
         # for debugging
         # print(f"h1: {h1}, a1: {a1}, c: {c}, number of players: {number_of_players}, points: {points1}, prob: {prob1}")
-        score1_new = score1 + a1 * c * (math.log(number_of_players/50, a1) + 1) * (caps1 / 5 - prob1)
-        score2_new = score2 + a2 * c * (math.log(number_of_players/50, a2) + 1) * (caps2 / 5 - prob2)
+        score1_new = score1 + matches1 * float(c) * (math.log(number_of_players/50, a1) + 1) * float(caps1 / 5 - prob1)
+        score2_new = score2 + matches2 * float(c) * (math.log(number_of_players/50, a2) + 1) * float(caps2 / 5 - prob2)
         return round(score1_new), round(score2_new), None
     except AssertionError:
         return None, None, "Sum of points in score must be less or equal to 5"
