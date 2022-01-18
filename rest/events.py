@@ -4,7 +4,7 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError
 from database.models import Event
-from .common import *
+from ._common import *
 
 
 class EventApi(Resource):
