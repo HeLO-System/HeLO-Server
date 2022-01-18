@@ -15,12 +15,10 @@ class User(db.Document):
     # admin or not
     role = db.StringField()
     clan = db.StringField()
-    # TODO: ?
+    # confirmation of a user (id), reserved ??
     conf = db.StringField()
  
     def hash_password(self):
-        # TODO: ist es nicht theoretisch schlauer das direkt oben zu callen ? sonst gibt es einen (kurzen)
-        # Moment wo der/die Pin ungehasht irgendwo liegt, Achtung: gefährliches Halbwissen
         self.pin = generate_password_hash(self.pin).decode('utf8')
  
     def check_password(self, pin):
@@ -32,15 +30,16 @@ class Clan(db.Document):
     tag = db.StringField(required=True, unique=True)
     # full name
     name = db.StringField()
-    # TODO: ?
+    # discord icon flag, e.g. :flag_eu:, :flag_de:, ...
     flag = db.StringField()
-    # TODO: ?
+    # discord invite link to a clan's discord server
     invite = db.StringField()
     # current HeLO Score
     score = db.IntField()
-    # TODO: ?, number of games? = count (siehe unten)
+    # number of games? = count (siehe unten)
+    # TODO: rename
     matches = db.IntField()
-    # TODO: ?
+    # confirmation, reserved ??
     conf = db.StringField()
     
     def init(self):
@@ -49,27 +48,27 @@ class Clan(db.Document):
 
 
 class Event(db.Document):
-    # TODO: ?, maybe the acronym of the event, like HPL = Hell Let Loose Premier League
+    # maybe the acronym of the event, like HPL = Hell Let Loose Premier League
     tag = db.StringField(required=True, unique=True)
+    # corresponding name to the tag
     name = db.StringField()
-    # TODO: ?
+    # event flag, e.g. :flag_hpl: what ever
     flag = db.StringField()
-    # TODO: ?
+    # discord invite link to the event's discord server
     invite = db.StringField()
-    # TODO: ?
+    # confirmation, reserver ??
     conf = db.StringField()
 
 
 class Match(db.Document):
-    # something like "StDb-91.-2022-01-07"
-    # # TODO: id = oid ?
+    # something like "StDb-91.-2022-01-07" what ever
     match_id     = db.StringField(required=True, unique=True)
-    # unique identifier (very long number) of the clan
+    # unique identifier (very long number) of the clan -> oid of the clan object in DB
     clan1_id     = db.StringField()
     # name of the clan (clan tag)
     clan1        = db.StringField()
-    coop1_id     = db.StringField()
     # if clan1 played with another clan
+    coop1_id     = db.StringField()
     coop1        = db.StringField()
     clan2_id     = db.StringField()
     clan2        = db.StringField()
@@ -91,10 +90,12 @@ class Match(db.Document):
     factor       = db.DecimalField()
     # name of the tournament, of just a training match
     event        = db.StringField()
-    # TODO: ?
+    # confirmation, very important
+    # match must be confirmed from both sides (representatives) in order to
+    # take the match into account
     conf1        = db.StringField()
     conf2        = db.StringField()
-    # TODO: ?
+    # deprecated
     score_posted = db.BooleanField()
 
 

@@ -13,7 +13,7 @@ def initialize_routes(api):
     api.add_resource(UsersApi, '/users')
     api.add_resource(ClanApi, '/clan/<oid>')
     api.add_resource(ClansApi, '/clans')
-    api.add_resource(MatchApi, '/match/<oid>')  # # TODO: ?, was war oid nochmal?  
+    api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
     api.add_resource(MatchesApi, '/matches')    
     api.add_resource(ScoresApi, '/scores')
     api.add_resource(ScoreApi, '/score/<oid>')
