@@ -45,7 +45,7 @@ class Event(db.Document):
     flag = db.StringField()
     # discord invite link to the event's discord server
     invite = db.StringField()
-    # confirmation, reserver ??
+    # confirmation, reserved ??
     conf = db.StringField()
 
 
@@ -85,7 +85,9 @@ class Match(db.Document):
     # confirmation, very important
     # match must be confirmed from both sides (representatives) in order to
     # take the match into account
+    # user id of the user who confirmed the match for clan1
     conf1        = db.StringField()
+    # user id of the user who confirmed the match for clan2
     conf2        = db.StringField()
     # deprecated
     score_posted = db.BooleanField()
@@ -152,7 +154,8 @@ class Scores(db.Document):
         Returns:
             Score: the new Score object
         """
-        return cls(clan.id, clan.played_games, match.match_id, clan.score)
+        # clan.id is the oid of the Clan object in the DB
+        return cls(str(clan.id), clan.played_games, match.match_id, clan.score)
     
     # def new_from_match(match:Match, clan:Clan):
     #     score = Scores()
