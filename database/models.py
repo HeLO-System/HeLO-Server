@@ -92,6 +92,13 @@ class Match(db.Document):
     # deprecated
     score_posted = db.BooleanField()
 
+    def needs_confirmations(self):
+        if self.conf1 is not None and self.conf2 is not None:
+            # do the calcs then
+            return False
+        else:
+            return True
+
 
 """
 second level class
