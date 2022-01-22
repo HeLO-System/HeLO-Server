@@ -164,4 +164,4 @@ class MatchesApi(Resource):
         except:
             return handle_error(f'error creating match in database')
         else:
-            return get_response({ "match_id": match.match_id, "confirmed": need_conf })
+            return get_response({ "match_id": match.match_id, "confirmed": not need_conf })
