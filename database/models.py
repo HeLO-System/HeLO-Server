@@ -41,8 +41,10 @@ class Event(db.Document):
     tag = db.StringField(required=True, unique=True)
     # corresponding name to the tag
     name = db.StringField()
-    # event flag, e.g. :flag_hpl: what ever
-    flag = db.StringField()
+    # event emoji, e.g. :hpl:
+    emoji = db.StringField()
+    # factor for score, e.g. extra sweaty = 1.3
+    factor = db.FloatField()
     # discord invite link to the event's discord server
     invite = db.StringField()
     # confirmation, reserved ??

@@ -1,9 +1,10 @@
 # rest/routes.py
+from rest.events import EventApi, EventsApi
 from rest.simulations import SimulationsApi
-from .users import SignupApi, LoginApi, UserApi, UsersApi
-from .clans import ClansApi, ClanApi
-from .scores import ScoreApi, ScoresApi
-from .matches import MatchApi, MatchesApi
+from rest.users import SignupApi, LoginApi, UserApi, UsersApi
+from rest.clans import ClansApi, ClanApi
+from rest.scores import ScoreApi, ScoresApi
+from rest.matches import MatchApi, MatchesApi
 
 
 def initialize_routes(api):
@@ -15,6 +16,8 @@ def initialize_routes(api):
     api.add_resource(ClansApi, '/clans')
     api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
     api.add_resource(MatchesApi, '/matches')    
+    api.add_resource(EventApi, '/event/<oid>')
+    api.add_resource(EventsApi, '/events')
     api.add_resource(ScoresApi, '/scores')
     api.add_resource(ScoreApi, '/score/<oid>')
     api.add_resource(SimulationsApi, '/simulations')
