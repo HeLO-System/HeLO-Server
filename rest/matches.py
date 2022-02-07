@@ -4,7 +4,7 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, DoesNotExist, OperationError
 from mongoengine.queryset.visitor import Q
-from database.models import Clan, Match, Scores
+from database.models import Clan, Match, Score
 from logic.calculations import get_new_scores
 from ._common import *
 

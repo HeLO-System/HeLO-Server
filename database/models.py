@@ -131,7 +131,7 @@ Every new score will be stored in a Score object. The maximum amount of score ob
 is the sum of all matches of every clan, e.g. 3 clans with (31, 26, 45) games
 --> 31 + 26 + 45 = 102 Score objects
 """
-class Scores(db.Document):
+class Score(db.Document):
     clan = db.StringField(required=True)
     # number of games, count = 31 means it's the score gained from the 31st match
     count = db.IntField(required=True)

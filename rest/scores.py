@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from database.models import Scores
+from database.models import Score
 from mongoengine import Q
 from ._common import *
 
@@ -12,7 +12,7 @@ class ScoreApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            score = Scores.objects.get(id=oid)
+            score = Score.objects.get(id=oid)
             return get_response(score)
         except:
             return handle_error(f"Error getting scores from database, score not found by oid: {oid}")     
@@ -22,7 +22,7 @@ class ScoreApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
-            scores = Scores.objects.get(id=oid)        
+            scores = Score.objects.get(id=oid)        
             try:
                 scores.update(**request.get_json())
                 return '', 204
@@ -35,7 +35,7 @@ class ScoreApi(Resource):
     @jwt_required()
     def delete(self, oid):
         try:
-            scores = Scores.objects.get(id=oid)        
+            scores = Score.objects.get(id=oid)        
             try:
                 scores = scores.delete()
                 return '', 204
@@ -58,7 +58,7 @@ class ScoresApi(Resource):
             where = Q(clan=clan) if clan != None else Q()
             fields = select.split(',') if select != None else []
             
-            scores = Scores.objects(where).only(*fields)
+            scores = Score.objects(where).only(*fields)
 
             return get_response(scores)
         except:
@@ -69,7 +69,7 @@ class ScoresApi(Resource):
     @jwt_required()
     def post(self):
         try:
-            scores = Scores(**request.get_json())
+            scores = Score(**request.get_json())
             try: 
                 scores = scores.save()
                 return get_response({ "id": scores.id })
