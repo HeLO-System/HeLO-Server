@@ -69,12 +69,12 @@ class ScoresApi(Resource):
     @jwt_required()
     def post(self):
         try:
-            scores = Score(**request.get_json())
+            score = Score(**request.get_json())
             try: 
-                scores = scores.save()
-                return get_response({ "id": scores.id })
+                score = score.save()
+                return get_response({ "id": score.id })
             except:
-                return handle_error(f"error creating scores in database: {scores.id}")
+                return handle_error(f"error creating scores in database: {score.id}")
         except:
             return handle_error(f'error creating scores in database')
         
