@@ -8,7 +8,7 @@ from flask_bcrypt import generate_password_hash, check_password_hash
 
 
 """
-firs level class
+first level class
 """
 class Clan(db.Document):
     # e.g. StDb for Stoßtrupp Donnerbalken
@@ -24,17 +24,16 @@ class Clan(db.Document):
     # current HeLO Score
     score = db.IntField()
     # number of games = count (siehe unten)
-    # TODO: rename
-    matches = db.IntField()
+    num_matches = db.IntField()
     # confirmation, reserved ??
     conf = db.StringField()
     
     def init(self):
-        if self.matches == None: self.matches = 0
+        if self.matches == None: self.num_matches = 0
         if self.score   == None: self.score = 500
 
 """
-firs level class
+first level class
 """
 class Event(db.Document):
     # acronym of the event, like HPL = Hell Let Loose Premier League

@@ -35,6 +35,9 @@ class MatchApi(Resource):
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
+            if not match.needs_confirmations():
+                # calc scores
+                pass
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")
         except DoesNotExist:
