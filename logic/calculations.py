@@ -93,3 +93,6 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
     # calculate the (weighted) average score of the cooperations
     avg1 = np.average(clan_scores1, weights=weights1)
     avg2 = np.average(clan_scores2, weights=weights2)
+
+    score1, score2, err = get_new_scores(avg1, avg2, caps1, caps2,
+                                        c=c, number_of_players=sum(player_dist1))
