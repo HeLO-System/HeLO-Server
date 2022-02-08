@@ -1,6 +1,7 @@
 # logic/calculations.py
 import logging
 import math
+import numpy as np
 
 
 def get_win_prob(score1, score2):
@@ -57,3 +58,38 @@ def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, nu
     except AssertionError:
         return None, None, "Sum of points in score must be less or equal to 5"
 
+
+def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
+                    player_dist1: list = None, player_dist2: list = None):
+    """Calculates the scores for games with more than one clan on one (or both) side(s).
+    If a player distribution is delivered, the score will be calculated based on a weighted
+    average. Otherwise a normal average will be calculated.
+
+    Args:
+        clan_scores1 (list): list of scores of the clans in the cooperation
+        clan_scores2 (list): list of scores of the clans in the cooperation on the other side
+        caps1 (int): strongpoints held by clans1 at the end of the game
+        caps2 (int): strongpoints held by clans2 at the end of the game
+        c (int, optional): competitive factor, possible values = {0.5, 0.8, 1, 1.2}. Defaults to 1.
+        player_dist1 (list, optional): player distributions of the participating clans1.
+                                        Defaults to None.
+        player_dist2 (list, optional): player distributions of the participating clans2.
+                                        Defaults to None.
+    """
+    # note: amount factor (a) will be ignored here, default is 40
+    # otherwise, these kind of games won't generate a significant score
+    a = 40
+
+    # convert player distributions to numpy arrays and normalize
+    try:
+        # performs weighted average
+        weights1 = np.array(player_dist1) / sum(player_dist1)
+        weights2 = np.array(player_dist2) / sum(player_dist2)
+    except TypeError:
+        # performs normal average
+        weights1 = np.ones(len(clan_scores1))
+        weights2 = np.ones(len(clan_scores2))
+
+    # calculate the (weighted) average score of the cooperations
+    avg1 = np.average(clan_scores1, weights=weights1)
+    avg2 = np.average(clan_scores2, weights=weights2)
