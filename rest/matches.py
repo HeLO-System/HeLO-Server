@@ -163,7 +163,9 @@ class MatchesApi(Resource):
         try:
             match = Match(**request.get_json())
             match = match.save()
-            need_conf = match.needs_confirmations()
+            need_conf = match.needs_confirmations() # just to remind the user
+            # a match will always need at least the confirmation of the other team
+            # therefore, there is no point of creating the scores within the POST method
         except:
             return handle_error(f'error creating match in database')
         else:

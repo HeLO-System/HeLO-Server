@@ -56,6 +56,13 @@ first level class
 class Match(db.Document):
     # something like "StDb-91.-2022-01-07" what ever
     match_id     = db.StringField(required=True, unique=True)
+    # unique identifiers (very long number) of the clan -> oid of the clan object in DB
+    clans1_ids = db.ListField()
+    clans2_ids = db.ListField()
+    # name of the clans (clan tag) mapped to the number of players they fielded
+    # e.g. {"CoRe": 30, "StDb": 20}
+    clans1 = db.DictField()
+    """
     # unique identifier (very long number) of the clan -> oid of the clan object in DB
     clan1_id     = db.StringField()
     # name of the clan (clan tag)
@@ -67,6 +74,7 @@ class Match(db.Document):
     clan2        = db.StringField()
     coop2_id     = db.StringField()
     coop2        = db.StringField()
+    """
     # allies or axis
     side1        = db.StringField()
     side2        = db.StringField()
