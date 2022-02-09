@@ -60,9 +60,9 @@ def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, nu
 
 
 def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
-                    player_dist1: list = None, player_dist2: list = None):
+                    player_dist1: list = None, player_dist2: list = None, num_players: int = 50):
     """Calculates the scores for games with more than one clan on one (or both) side(s).
-    If a player distribution is delivered, the score will be calculated based on a weighted
+    If a player distribution is given, the score will be calculated based on a weighted
     average. Otherwise a normal average will be calculated.
 
     Args:
@@ -75,6 +75,11 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
                                         Defaults to None.
         player_dist2 (list, optional): player distributions of the participating clans2.
                                         Defaults to None.
+        num_players (list, optional): total number of players, only necessary if no player
+                                        distribution was given
+
+    Returns:
+        list, list: list of the new HeLO scores for every team (coop1, coop2)
     """
     # note: amount factor (a) will be ignored here, default is 40
     # otherwise, these kind of games won't generate a significant score
@@ -85,14 +90,57 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
         # performs weighted average
         weights1 = np.array(player_dist1) / sum(player_dist1)
         weights2 = np.array(player_dist2) / sum(player_dist2)
+        num_players = sum(player_dist1)
     except TypeError:
         # performs normal average
-        weights1 = np.ones(len(clan_scores1))
-        weights2 = np.ones(len(clan_scores2))
+        weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
+        weights2 = np.ones(len(clan_scores2)) / len(clan_scores2)
 
     # calculate the (weighted) average score of the cooperations
     avg1 = np.average(clan_scores1, weights=weights1)
     avg2 = np.average(clan_scores2, weights=weights2)
 
     score1, score2, err = get_new_scores(avg1, avg2, caps1, caps2,
-                                        c=c, number_of_players=sum(player_dist1))
+                                        c=c, number_of_players=num_players)
+    gain1, gain2 = score1 - avg1, score2 - avg2
+
+    print(gain1, gain2)
+
+    # share the gain depending on the player distribution
+    # if there is no player distribution, share equally
+    # cs = clan score, part = partial share according to the distribution
+    clan_scores1 = [round(cs + part * gain1) for cs, part in zip(clan_scores1, weights1)]
+    clan_scores2 = [round(cs + part * gain2) for cs, part in zip(clan_scores2, weights2)]
+
+    return clan_scores1, clan_scores2
+
+
+if __name__ == "__main__":
+    # some scores
+    clan1 = 513
+    clan2 = 683
+    clan3 = 711
+    clan4 = 578
+    clan5 = 604
+
+    coop1 = [clan2, clan3]          # in Germany we say: "Die guten ins Töpfchen ..."
+    coop2 = [clan1, clan4, clan5]   # " ... die schlechten ins Kröpfchen"
+
+    player_distribution1 = [30, 20]
+    player_distribution2 = [5, 25, 20]
+
+    # game result
+    caps1 = 5
+    caps2 = 0
+
+    # test a: with distributions
+    new1a, new2a = get_coop_scores(coop1, coop2, caps1, caps2,
+                                    player_dist1=player_distribution1,
+                                    player_dist2=player_distribution2)
+
+    # test b: without distributions
+    new1b, new2b = get_coop_scores(coop1, coop2, caps1, caps2)
+
+    print("------------------------------------")
+    print(f"test a: {new1a}, {new2a}")
+    print(f"test b: {new1b}, {new2b}")
