@@ -1,11 +1,12 @@
 # rest/matches.py
+import enum
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, DoesNotExist, OperationError
 from mongoengine.queryset.visitor import Q
 from database.models import Clan, Match, Score
-from logic.calculations import get_new_scores
+from logic.calculations import get_coop_scores, get_new_scores
 from ._common import *
 
 
@@ -35,13 +36,38 @@ class MatchApi(Resource):
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
+
             if not match.needs_confirmations():
                 # calc scores
-                pass
+                clans1, clans2 = match.get_clan_objects()
+                scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
+                # check if it is a coop game or a normal game
+                if len(match.clans1.keys()) == 1 and len(match.clans2.keys()) == 1:
+                    score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score, match.caps1,
+                                                        match.caps2, clans1[0].num_matches, clans2[0].num_matches,
+                                                        match.factor, match.players)
+                    clans1[0].score, clans2[0] = score1, score2
+                    clans1[0].save()
+                    clans2[0].save()
+
+                else:
+                    scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1, match.caps2,
+                                                            match.factor, match.clans1.items(), match.clans2.items(),
+                                                            match.players)
+                    for i, clan1, clan2 in enumerate(zip(clans1, clans2)):
+                        clan1.score, clan2.score = scores1[i], scores2[i]
+                        clan1.save()
+                        clan2.save()
+
+                if err is not None: raise ValueError
+
+
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")
         except DoesNotExist:
             return handle_error(f"error updating match in database, match not found by oid: {oid}")
+        except ValueError:
+            return handle_error(f"{err} - error updating match with id: {oid}")
         else:
             return '', 204
 
@@ -67,11 +93,13 @@ class MatchesApi(Resource):
         try:
             select = request.args.get('select')
             match_id = request.args.get('match_id')
-            clan_id = request.args.get('clan_id')
-            clan1_id = request.args.get('clan1_id')
-            coop1_id = request.args.get('coop1_id')
-            clan2_id = request.args.get('clan2_id')
-            coop2_id = request.args.get('coop2_id')
+            clans1 = request.args.get('clans1')
+            clans2 = request.args.get('clans2')
+            clans1_ids = request.args.get('clans1_ids')
+            clans2_ids = request.args.get('clans2_ids')
+            # coop1_id = request.args.get('coop1_id')
+            # clan2_id = request.args.get('clan2_id')
+            # coop2_id = request.args.get('coop2_id')
             conf1 = request.args.get('conf1')
             conf2 = request.args.get('conf2')
             date = request.args.get('date')
@@ -80,13 +108,17 @@ class MatchesApi(Resource):
 
             fields = select.split(',') if select != None else []
                 
-            where = Q()
+            where = Q() # to perform advanced queries
+            # see the doc: https://docs.mongoengine.org/guide/querying.html#advanced-queries
+            # note, '&=' is the 'assign intersection operator'
             if match_id != None: where &= Q(match_id=match_id)
-            if clan_id != None: where &= (Q(clan1_id=clan_id) | Q(clan2_id=clan_id))
-            if clan1_id != None: where &= Q(clan1_id=clan1_id)
-            if coop1_id != None: where &= Q(coop1_id=coop1_id)
-            if clan2_id != None: where &= Q(clan2_id=clan2_id)
-            if coop2_id != None: where &= Q(coop2_id=coop2_id)
+            #if clans1_ids != None: where &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
+            if clans1_ids != None: where &= Q(clans1_ids=clans1_ids)
+            if clans2_ids != None: where &= Q(clans2_ids=clans2_ids)
+            if clans1 != None: where &= Q(clans1=clans1)
+            #if coop1_id != None: where &= Q(coop1_id=coop1_id)
+            if clans2 != None: where &= Q(clans2=clans2)
+            #if coop2_id != None: where &= Q(coop2_id=coop2_id)
             if conf1 != None: where &= Q(conf1=conf1)
             if conf2 != None: where &= Q(conf2=conf2)
             if date != None: where &= Q(date=date)

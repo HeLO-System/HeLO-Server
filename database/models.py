@@ -61,7 +61,9 @@ class Match(db.Document):
     clans2_ids = db.ListField()
     # name of the clans (clan tag) mapped to the number of players they fielded
     # e.g. {"CoRe": 30, "StDb": 20}
+    # player distribution is not required, and should be None in this case
     clans1 = db.DictField()
+    clans2 = db.DictField()
     """
     # unique identifier (very long number) of the clan -> oid of the clan object in DB
     clan1_id     = db.StringField()
@@ -107,6 +109,11 @@ class Match(db.Document):
             return False
         else:
             return True
+
+    def get_clan_objects(self):
+        clans1 = [Clan.objects.get(id=oid) for oid in self.clans1_ids]
+        clans2 = [Clan.objects.get(id=oid) for oid in self.clans2_ids]
+        return clans1, clans2
 
 
 """

@@ -79,10 +79,13 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
                                         distribution was given
 
     Returns:
-        list, list: list of the new HeLO scores for every team (coop1, coop2)
+        list, list, str: list of the new HeLO scores for every team (coop1, coop2), error message
     """
     # note: amount factor (a) will be ignored here, default is 40
     # otherwise, these kind of games won't generate a significant score
+    # TODO: known issue: a coop game is also a game where only one clan plays against
+    # two or more clans, therefore the clan playing alone will be weighted with a = 40
+    # regardless of its number of games
     a = 40
 
     # convert player distributions to numpy arrays and normalize
@@ -112,4 +115,4 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
     clan_scores1 = [round(cs + part * gain1) for cs, part in zip(clan_scores1, weights1)]
     clan_scores2 = [round(cs + part * gain2) for cs, part in zip(clan_scores2, weights2)]
 
-    return clan_scores1, clan_scores2
+    return clan_scores1, clan_scores2, err
