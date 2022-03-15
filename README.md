@@ -64,7 +64,7 @@ Update a clan object in the database.
     Content: empty
 * **Error Response:** <br/>
   * Code: `400 BAD REQUEST` <br/>
-    Content: Faulty Request<br/>
+    Content: "Faulty Request"<br/>
     Meaning: your JSON object contains errors
   * Code: `401 UNAUTHORIZED`<br/>
     Content: "Wrong Token or no Admin"<br/>
@@ -105,8 +105,8 @@ Delete a clan object from the database.
   * Code: `204` <br/>
     Content: empty
 * **Error Response:** <br/>
-  * Code: `401 UNAUTHORIZED`
-    Content: Wrong Token or no Admin
+  * Code: `401 UNAUTHORIZED`<br/>
+    Content: "Wrong Token or no Admin"<br/>
     Meaning: your JWT is not correct
   * Code: `404 NOT FOUND` <br/>
     Content: "not a valid object id" <br/>
@@ -126,4 +126,13 @@ Delete a clan object from the database.
     204 NO CONTENT
 
     ```
+<br/>
+
+## Create a Clan
+Create a new clan object.
+* **URL:** /clans
+* **Method:** `POST`
+* **JWT Required:** Yes
+* **Admin Required:** Yes
+
 <br/>
