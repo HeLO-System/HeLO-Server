@@ -36,6 +36,7 @@ class MatchApi(Resource):
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
+            match.reload()
             
             if not match.needs_confirmations():
                 print("match confirmed")
