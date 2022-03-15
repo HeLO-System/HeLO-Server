@@ -157,10 +157,10 @@ class Score(db.Document):
     # IMPORTANT: clan.score must be updated first!
     # score_before = db.IntField(required=True)
 
-    def __init__(self, clan: str, count: int, match_id: str, score: int):
+    def __init__(self, clan: str, num_matches: int, match_id: str, score: int):
         super().__init__()
         self.clan = clan
-        self.count = count
+        self.num_matches = num_matches
         self.match_id = match_id
         self.score = score
 

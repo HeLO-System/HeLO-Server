@@ -53,6 +53,11 @@ class MatchApi(Resource):
                     clans2[0].num_matches += 1
                     clans1[0].save()
                     clans2[0].save()
+                    # create Score Objects
+                    score_obj1 = Score.from_match(match, clans1[0])
+                    score_obj1.save()
+                    score_obj2 = Score.from_match(match, clans2[0])
+                    score_obj2.save()
 
                 else:
                     scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1, match.caps2,
@@ -60,14 +65,12 @@ class MatchApi(Resource):
                                                             match.players)
                     
                     # save new scores for both clan lists
-                    for clan, score in zip(clans1, scores1):
+                    for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
                         clan.score = score
                         clan.num_matches += 1
                         clan.save()
-                    for clan, score in zip(clans2, scores2):
-                        clan.score = score
-                        clan.num_matches += 1
-                        clan.save()
+                        score_obj = Score.from_match(match, clan)
+                        score_obj.save()
 
                 if err is not None: raise ValueError
 
