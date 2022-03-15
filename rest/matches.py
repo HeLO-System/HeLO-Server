@@ -48,6 +48,8 @@ class MatchApi(Resource):
                                                         match.caps2, clans1[0].num_matches, clans2[0].num_matches,
                                                         match.factor, match.players)
                     clans1[0].score, clans2[0].score = score1, score2
+                    clans1[0].num_matches += 1
+                    clans2[0].num_matches += 1
                     clans1[0].save()
                     clans2[0].save()
 
@@ -59,9 +61,11 @@ class MatchApi(Resource):
                     # save new scores for both clan lists
                     for clan, score in zip(clans1, scores1):
                         clan.score = score
+                        clan.num_matches += 1
                         clan.save()
                     for clan, score in zip(clans2, scores2):
                         clan.score = score
+                        clan.num_matches += 1
                         clan.save()
 
                 if err is not None: raise ValueError

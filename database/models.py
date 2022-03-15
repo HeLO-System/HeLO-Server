@@ -15,8 +15,6 @@ class Clan(db.Document):
     tag = db.StringField(required=True, unique=True)
     # full name
     name = db.StringField()
-    # how many games the clan has been played so far
-    played_games = db.IntField()
     # discord icon flag, e.g. :flag_eu:, :flag_de:, ...
     flag = db.StringField()
     # discord invite link to a clan's discord server
@@ -178,7 +176,7 @@ class Score(db.Document):
             Score: the new Score object
         """
         # clan.id is the oid of the Clan object in the DB
-        return cls(str(clan.id), clan.played_games, match.match_id, clan.score)
+        return cls(str(clan.id), clan.num_matches, match.match_id, clan.score)
     
     # def new_from_match(match:Match, clan:Clan):
     #     score = Scores()
