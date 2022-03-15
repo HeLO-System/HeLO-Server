@@ -106,7 +106,7 @@ class UsersApi(Resource):
 
 
 
-    # add new clan
+    # add new user
     @jwt_required()
     def post(self):
         try:
@@ -115,7 +115,7 @@ class UsersApi(Resource):
                 user = user.save()
                 return get_response({ "id": user.id })
             except NotUniqueError:
-                return handle_error(f"clan already exists in database: {user.userid}")
+                return handle_error(f"user already exists in database: {user.userid}")
             except:
                 return handle_error(f"error creating user in database: {user.userid}")
         except:
