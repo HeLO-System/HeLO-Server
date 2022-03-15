@@ -34,7 +34,7 @@ class ClanApi(Resource):
 
     # update clan by object id
     # admin only
-    @jwt_required()
+    @admin_required()
     def delete(self, oid):
         try:
             clan = Clan.objects.get(id=oid)        
@@ -68,15 +68,17 @@ class ClansApi(Resource):
 
 
     # add new clan
+    #@jwt_required()
     # admin only
-    @jwt_required()
+    @admin_required()
     def post(self):
         try:
             clan = Clan(**request.get_json())
             # todo - validate
             try:
                 clan = clan.save()
-                return get_response({ "id": clan.id })
+                #return get_response({ "id": clan.id }) # weird error happening here, TODO: fix this
+                return f"id: {clan.id}", 200
             except NotUniqueError:
                 return handle_error(f"clan already exists in database: {clan.tag}")
             except:

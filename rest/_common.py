@@ -1,8 +1,11 @@
 # rest/common.py
+from functools import wraps
 import json
 import logging
 import traceback
-from flask import request, Response
+from flask import request, Response, jsonify
+from flask_jwt_extended import verify_jwt_in_request
+from flask_jwt_extended import get_jwt
             
 
 # build response
@@ -23,3 +26,22 @@ def handle_error(text):
 
 # check for None or empty string
 def empty(s): return s == None or s == ""
+
+
+# custom decorator varifying JWT is present in the request,
+# as well as insuring that the request has a claim indicating
+# the user is an admin
+def admin_required():
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            verify_jwt_in_request()
+            claims = get_jwt()
+            if claims["is_admin"]:
+                return fn(*args, **kwargs)
+            else:
+                #return jsonify(msg="This action can be performed by an administrator only!"), 403 # does not work
+                return "This action can be performed by an administrator only!", 403
+        return decorator
+    return wrapper
+

@@ -125,8 +125,8 @@ class User(db.Document):
     # required for login
     pin = db.StringField()
     name = db.StringField()
-    # admin or not
-    role = db.StringField()
+    # admin or teamrep (team representative)
+    role = db.StringField(required=True)
     clan = db.StringField()
     # confirmation of a user (id), reserved ??
     conf = db.StringField()

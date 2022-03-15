@@ -32,7 +32,16 @@ class LoginApi(Resource):
             if not authorized:
                 return {'error': 'userid or pin invalid'}, 401
 
-            access_token = create_access_token(identity=user.userid, expires_delta=datetime.timedelta(days=7))
+            if user.role == "admin":
+                print("admin requested JWT token")
+                access_token = create_access_token(identity=user.userid,
+                                                    expires_delta=datetime.timedelta(days=7),
+                                                    additional_claims={"is_admin": True})
+            else:
+                print("non-admin requested JWT token")
+                access_token = create_access_token(identity=user.userid,
+                                                    expires_delta=datetime.timedelta(days=7),
+                                                    additional_claims={"is_admin": False})
             return get_response({ 'token': access_token })
         except:
             return handle_error("Error logging in")
