@@ -144,8 +144,8 @@ class User(db.Document):
 class to store all scores from all clans, this class should be understood as QoL class,
 that make things easier in the long run, but should not be considered as "first level class"
 Every new score will be stored in a Score object. The maximum amount of score objects
-is the sum of all matches of every clan, e.g. 3 clans with (31, 26, 45) games
---> 31 + 26 + 45 = 102 Score objects
+for one clan is the sum of all matches of the clan.
+One match results automatically in at least two Score Objects.
 """
 class Score(db.Document):
     clan = db.StringField(required=True)
