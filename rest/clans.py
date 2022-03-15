@@ -33,6 +33,7 @@ class ClanApi(Resource):
             return handle_error(f"error updating clan in database, clan not found by oid: {oid}")
 
     # update clan by object id
+    # admin only
     @jwt_required()
     def delete(self, oid):
         try:
@@ -67,6 +68,7 @@ class ClansApi(Resource):
 
 
     # add new clan
+    # admin only
     @jwt_required()
     def post(self):
         try:
