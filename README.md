@@ -31,6 +31,9 @@ Fetch a clan object by its id.
 * **Error Response:** <br/>
   * Code: `404 NOT FOUND` <br/>
     Content: "not a valid object id" <br/>
+    Meaning: the given {id} is not valid, maybe there is something missing
+  * Code: `404 NOT FOUND` <br/>
+    Content: "does not exist" <br/>
     Meaning: the given {id} does not exist
 * **Example:** <br/>
   * Request: <br/>
@@ -64,7 +67,7 @@ Update a clan object in the database.
     Content: Faulty Request<br/>
     Meaning: your JSON object contains errors
   * Code: `401 UNAUTHORIZED`<br/>
-    Content: Wrong Token or no Admin<br/>
+    Content: "Wrong Token or no Admin"<br/>
     Meaning: your JWT is not correct
   * Code: `404 NOT FOUND` <br/>
     Content: "not a valid object id" <br/>

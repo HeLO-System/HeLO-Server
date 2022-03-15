@@ -17,6 +17,8 @@ class ClanApi(Resource):
             return get_response(clan)
         except ValidationError:
             return "not a valid object id", 404
+        except DoesNotExist:
+                return "object does not exist", 404
         except Exception as e:
             return handle_error(f"""error getting clan from database,
                                 clan not found by oid: {oid}
