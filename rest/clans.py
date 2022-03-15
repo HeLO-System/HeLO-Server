@@ -1,8 +1,9 @@
 # rest/clans.py
+from xml.dom import ValidationErr
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError
+from mongoengine.errors import NotUniqueError, ValidationError
 from database.models import Clan, User
 from ._common import *
 
@@ -81,6 +82,8 @@ class ClansApi(Resource):
                 return f"id: {clan.id}", 200
             except NotUniqueError:
                 return handle_error(f"clan already exists in database: {clan.tag}")
+            except ValidationError as e:
+                return handle_error(f"required field is empty: {e}")
             except:
                 return handle_error(f"error creating clan in database: {clan.tag}")
         except:

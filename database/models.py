@@ -20,9 +20,9 @@ class Clan(db.Document):
     # discord invite link to a clan's discord server
     invite = db.StringField()
     # current HeLO Score
-    score = db.IntField()
+    score = db.IntField(required=True)
     # number of games
-    num_matches = db.IntField()
+    num_matches = db.IntField(required=True)
     # confirmation, reserved ??
     conf = db.StringField()
     
