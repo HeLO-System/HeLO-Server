@@ -36,7 +36,7 @@ class MatchApi(Resource):
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
-
+            
             if not match.needs_confirmations():
                 # calc scores
                 clans1, clans2 = match.get_clan_objects()
@@ -44,9 +44,9 @@ class MatchApi(Resource):
                 # check if it is a coop game or a normal game
                 if len(match.clans1.keys()) == 1 and len(match.clans2.keys()) == 1:
                     score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score, match.caps1,
-                                                        match.caps2, clans1[0].num_matches, clans2[0].num_matches,
+                                                        match.caps2, clans1[0].matches, clans2[0].matches,
                                                         match.factor, match.players)
-                    clans1[0].score, clans2[0] = score1, score2
+                    clans1[0].score, clans2[0].score = score1, score2
                     clans1[0].save()
                     clans2[0].save()
 
@@ -61,7 +61,7 @@ class MatchApi(Resource):
 
                 if err is not None: raise ValueError
 
-
+            
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")
         except DoesNotExist:
@@ -69,7 +69,7 @@ class MatchApi(Resource):
         except ValueError:
             return handle_error(f"{err} - error updating match with id: {oid}")
         else:
-            return '', 204
+            return 'match updated successfully', 204
 
     # update match by object id
     @jwt_required()

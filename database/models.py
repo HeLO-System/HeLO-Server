@@ -23,7 +23,7 @@ class Clan(db.Document):
     invite = db.StringField()
     # current HeLO Score
     score = db.IntField()
-    # number of games = count (siehe unten)
+    # number of games
     num_matches = db.IntField()
     # confirmation, reserved ??
     conf = db.StringField()
@@ -55,7 +55,7 @@ first level class
 """
 class Match(db.Document):
     # something like "StDb-91.-2022-01-07" what ever
-    match_id     = db.StringField(required=True, unique=True)
+    match_id = db.StringField(required=True, unique=True)
     # unique identifiers (very long number) of the clan -> oid of the clan object in DB
     clans1_ids = db.ListField()
     clans2_ids = db.ListField()
@@ -104,7 +104,7 @@ class Match(db.Document):
     score_posted = db.BooleanField()
 
     def needs_confirmations(self):
-        if self.conf1 is not None and self.conf2 is not None:
+        if self.conf1 != "" and self.conf2 != "":
             # do the calcs then
             return False
         else:
@@ -147,8 +147,8 @@ is the sum of all matches of every clan, e.g. 3 clans with (31, 26, 45) games
 """
 class Score(db.Document):
     clan = db.StringField(required=True)
-    # number of games, count = 31 means it's the score gained from the 31st match
-    count = db.IntField(required=True)
+    # number of games, = 31 means it's the score gained from the 31st match
+    num_matches = db.IntField(required=True)
     # match id of the match where the score calculation
     # is based on, something like "StDb-91.-2022-01-07"
     match_id = db.StringField(required=True)
