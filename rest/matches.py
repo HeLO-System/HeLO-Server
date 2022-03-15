@@ -38,13 +38,14 @@ class MatchApi(Resource):
             match.update(**request.get_json())
             
             if not match.needs_confirmations():
+                print("match confirmed")
                 # calc scores
                 clans1, clans2 = match.get_clan_objects()
                 scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
                 # check if it is a coop game or a normal game
                 if len(match.clans1.keys()) == 1 and len(match.clans2.keys()) == 1:
                     score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score, match.caps1,
-                                                        match.caps2, clans1[0].matches, clans2[0].matches,
+                                                        match.caps2, clans1[0].num_matches, clans2[0].num_matches,
                                                         match.factor, match.players)
                     clans1[0].score, clans2[0].score = score1, score2
                     clans1[0].save()
@@ -54,10 +55,14 @@ class MatchApi(Resource):
                     scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1, match.caps2,
                                                             match.factor, match.clans1.items(), match.clans2.items(),
                                                             match.players)
-                    for i, clan1, clan2 in enumerate(zip(clans1, clans2)):
-                        clan1.score, clan2.score = scores1[i], scores2[i]
-                        clan1.save()
-                        clan2.save()
+                    
+                    # save new scores for both clan lists
+                    for clan, score in zip(clans1, scores1):
+                        clan.score = score
+                        clan.save()
+                    for clan, score in zip(clans2, scores2):
+                        clan.score = score
+                        clan.save()
 
                 if err is not None: raise ValueError
 

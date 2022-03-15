@@ -104,7 +104,7 @@ class Match(db.Document):
     score_posted = db.BooleanField()
 
     def needs_confirmations(self):
-        if self.conf1 != "" and self.conf2 != "":
+        if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
             # do the calcs then
             return False
         else:
