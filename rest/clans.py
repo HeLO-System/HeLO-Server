@@ -2,7 +2,8 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, ValidationError
+from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
+from werkzeug.exceptions import BadRequest
 from database.models import Clan
 from ._common import *
 
@@ -16,8 +17,10 @@ class ClanApi(Resource):
             return get_response(clan)
         except ValidationError:
             return "not a valid object id", 404
-        except:
-            return handle_error(f"error getting clan from database, clan not found by oid: {oid}")
+        except Exception as e:
+            return handle_error(f"""error getting clan from database,
+                                clan not found by oid: {oid}
+                                terminated with error: {e}""")
         
 
     # update clan by object id
@@ -29,10 +32,18 @@ class ClanApi(Resource):
             try:
                 clan.update(**request.get_json())
                 return '', 204
-            except:
-                return handle_error(f"error updating clan in database: {clan.tag}")
-        except:
-            return handle_error(f"error updating clan in database, clan not found by oid: {oid}")
+            except BadRequest:
+                return "Faulty Request", 400
+            except Exception as e:
+                return handle_error(f"""error updating clan in database: {clan.tag}
+                                    terminated with error: {e}""")
+        except ValidationError:
+                return "not a valid object id", 404
+        except DoesNotExist:
+                return "object does not exist", 404
+        except Exception as e:
+            return handle_error(f"""error updating clan in database
+                                terminated with error: {e}""")
 
     # update clan by object id
     # admin only
@@ -43,11 +54,16 @@ class ClanApi(Resource):
             try:
                 clan = clan.delete()
                 return '', 204
-            except:
-                return handle_error(f"error deleting clan in database: {clan.tag}")
-        except:
-            return handle_error(f"error deleting clan in database, clan not found by oid: {oid}")
-        
+            except Exception as e:
+                return handle_error(f"""error deleting clan in database: {clan.tag}
+                                    terminated with error: {e}""")
+        except ValidationError:
+                return "not a valid object id", 404
+        except DoesNotExist:
+                return "object does not exist", 404
+        except Exception as e:
+            return handle_error(f"""error deleting clan in database
+                                terminated with error: {e}""")
 
 
 class ClansApi(Resource):

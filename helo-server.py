@@ -1,6 +1,6 @@
 # HeLO.py
 import json, os, logging
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_bcrypt import Bcrypt
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
@@ -27,6 +27,14 @@ bcrypt = Bcrypt(app)
 
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 jwt = JWTManager(app)
+
+# needs to be true for custom error messages
+app.config["PROPAGATE_EXCEPTIONS"] = True
+
+# custom error message for wrong JWTs
+@jwt.invalid_token_loader
+def invalid_token_callback(s):
+    return jsonify("Wrong Token or no Admin"), 401
 
 
 # home page: offer some explanation how to use the API
