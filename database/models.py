@@ -20,15 +20,19 @@ class Clan(db.Document):
     # discord invite link to a clan's discord server
     invite = db.StringField()
     # current HeLO Score
-    score = db.IntField(required=True)
+    score = db.IntField()
     # number of games
-    num_matches = db.IntField(required=True)
+    num_matches = db.IntField()
     # confirmation, reserved ??
     conf = db.StringField()
+    # alternative tags, if a clan was renamed, reserved
+    alt_tags = db.ListField()
     
-    def init(self):
-        if self.matches == None: self.num_matches = 0
-        if self.score   == None: self.score = 500
+    # will be called when the Clan Object is initialized
+    # sets the default values for number of matches and score
+    def set_default_values(self):
+        if self.num_matches is None: self.num_matches = 0
+        if self.score is None: self.score = 600
 
 """
 first level class

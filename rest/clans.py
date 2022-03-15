@@ -1,10 +1,9 @@
 # rest/clans.py
-from xml.dom import ValidationErr
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, ValidationError
-from database.models import Clan, User
+from database.models import Clan
 from ._common import *
 
 
@@ -24,7 +23,7 @@ class ClanApi(Resource):
     def put(self, oid):
         try:
             clan = Clan.objects.get(id=oid)
-            # todo - validate
+            # todo - validate TODO: was ist mit validate gemeint?
             try:
                 clan.update(**request.get_json())
                 return '', 204
@@ -77,6 +76,7 @@ class ClansApi(Resource):
             clan = Clan(**request.get_json())
             # todo - validate
             try:
+                clan.set_default_values()
                 clan = clan.save()
                 #return get_response({ "id": clan.id }) # weird error happening here, TODO: fix this
                 return f"id: {clan.id}", 200

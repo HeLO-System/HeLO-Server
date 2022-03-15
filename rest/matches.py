@@ -24,15 +24,6 @@ class MatchApi(Resource):
     # update match by object id
     @jwt_required()
     def put(self, oid):
-        # try:
-        #     match = Match.objects.get(id=oid)        
-        #     try:
-        #         match.update(**request.get_json())
-        #         return '', 204
-        #     except:
-        #         return handle_error(f"error updating match in database: {oid}")
-        # except:
-        #     return handle_error(f"error updating match in database, match not found by oid: {oid}")
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
@@ -45,8 +36,10 @@ class MatchApi(Resource):
                 scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
                 # check if it is a coop game or a normal game
                 if len(match.clans1.keys()) == 1 and len(match.clans2.keys()) == 1:
-                    score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score, match.caps1,
-                                                        match.caps2, clans1[0].num_matches, clans2[0].num_matches,
+                    score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score,
+                                                        match.caps1, match.caps2,
+                                                        clans1[0].num_matches,
+                                                        clans2[0].num_matches,
                                                         match.factor, match.players)
                     clans1[0].score, clans2[0].score = score1, score2
                     clans1[0].num_matches += 1
@@ -60,8 +53,10 @@ class MatchApi(Resource):
                     score_obj2.save()
 
                 else:
-                    scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1, match.caps2,
-                                                            match.factor, match.clans1.items(), match.clans2.items(),
+                    scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1,
+                                                            match.caps2, match.factor,
+                                                            match.clans1.items(),
+                                                            match.clans2.items(),
                                                             match.players)
                     
                     # save new scores for both clan lists
@@ -69,6 +64,7 @@ class MatchApi(Resource):
                         clan.score = score
                         clan.num_matches += 1
                         clan.save()
+                        # create Score Objects
                         score_obj = Score.from_match(match, clan)
                         score_obj.save()
 
@@ -82,7 +78,7 @@ class MatchApi(Resource):
         except ValueError:
             return handle_error(f"{err} - error updating match with id: {oid}")
         else:
-            return 'match updated successfully', 204
+            return '', 204
 
     # update match by object id
     @jwt_required()
