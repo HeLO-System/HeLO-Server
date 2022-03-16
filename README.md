@@ -15,6 +15,9 @@ there is still work in progress ...
   - [Delete Match](#delete-match)
 - [Signup and Login](#signup-and-login)
   - [Signup](#signup)
+  - [Login](#login)
+- [User Objects](#user-objects)
+  - [Get User](#get-user)
 - [Models Overview](#models-overview)
   - [Clan](#clan)
   - [Event](#event)
@@ -356,6 +359,60 @@ Create a new user.
     }
     ```
 * **Note:** Only "userid" and "role" are required fields.
+
+<br/>
+
+## Login
+Login with existing user id and pin in order to receive an active token (JWT). The JWT expires after seven days.
+* **Endpoint:** */auth/login*
+* **Method:** `POST`
+* **JWT Required:** No
+* **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `POST .../auth/login`<br/>
+    body:
+    ```
+    {
+      "userid": "307305122940659340",
+      "pin": "12345"
+    }
+    ```
+  * Response:
+    ```
+    200 OK
+    {
+      "token": "yJ0eX..."
+    }
+    ```
+    
+
+<br/>
+
+# User Objects
+## Get User
+Fetch user object from database by discord id.
+* **Endpoint:** */user/{id}*
+* **Method:** `GET`
+* **JWT Required:** No
+* **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `GET .../user/307305122940659340`<br/>
+  * Response:
+    ```
+    200 OK
+    {
+      "_id": {
+          "$oid": "6231c401ae4121068fa98057"
+      },
+      "userid": "307305122940659340",
+      "pin": "$2b$12$nqOao4.1j4sT9pLoyibo8u1evrNKyDCHdHcEtF7f7AJSj6pOgkCQq",
+      "name": "MasterMind3000",
+      "role": "teamrep"
+    }
+    ```
+* **Note:** The pin is hashed and not human-readable. This is also the case for admins having direct database access.
 
 <br/>
 

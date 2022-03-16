@@ -71,6 +71,12 @@ class UserApi(Resource):
         try:
             user = User.objects.get(userid=userid)        
             try:
+                # prevents non-admins from changing their role
+                # by checking the additional claim in JWT
+                if "role" in request.get_json().keys():
+                    claims = get_jwt()
+                    if not claims["is_admin"]:
+                        return "non-admins are not allowed to change their role", 401
                 user.update(**request.get_json())
                 return '', 204
             except:
