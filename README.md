@@ -15,6 +15,12 @@ there is still work in progress ...
   - [Delete Match](#delete-match)
 - [Signup and Login](#signup-and-login)
   - [Signup](#signup)
+- [Models Overview](#models-overview)
+  - [Clan](#clan)
+  - [Event](#event)
+  - [Match](#match)
+  - [User](#user)
+  - [Score](#score)
 
 # Routes Overview
 * /auth/signup
@@ -328,15 +334,97 @@ Create a new user.
 * **Admin Required:** Yes
 * **Example:** <br/>
   * Request: <br/>
-    `DELETE .../match/6231b2b0caa748197199bd48`<br/>
+    `POST .../auth/signup`<br/>
     header:
     ```
     Token = yJ0eX...
     ```
+    body:
+    ```
+    {
+      "userid": "307305122940659340",
+      "pin": "12345",
+      "name": "MasterMind3000",
+      "role": "teamrep"
+    }
+    ```
   * Response:
     ```
-    204 NO CONTENT
-    
+    200 OK
+    {
+      "id": "307305122940659340"
+    }
     ```
+* **Note:** Only "userid" and "role" are required fields.
 
+<br/>
+
+
+# Models Overview
+All attributes and possible settings for the different objects. `*` means the field is required and `**` means the field is required and unique.
+
+## Clan
+  | Field           | Explanation                                     | Type        |
+  | :-------------: |:-----------------------------------------------:|:-----------:|
+  | `tag**`         | official clan tag, e.g. CoRe                    | StringField |
+  | `name`          | full name of the clan, e.g. Corvus Rex          | StringField |
+  | `flag`          | discord icon ID of flag of origin, e.g. flag_eu | StringField |
+  | `invite`        | discord invite link                             | StringField |
+  | `score`         | current HeLO Score                              | IntField    |
+  | `num_matches`   | number of played matches                        | IntField    |
+  | `conf`          | *not in use, reserved*                          | StringField |
+  | `alt_tags`      | alternative tags, in case of renaming           | ListField   |
+<br/>
+
+## Event
+  | Field           | Explanation                                     | Type        |
+  | :-------------: |:-----------------------------------------------:|:-----------:|
+  | `tag**`         | acronym of the event, e.g. HPL                  | StringField |
+  | `name`          | corresponding name, e.g. HLL Premier League     | StringField |
+  | `emoji`         | event emoji discord id, e.g. hpl                | StringField |
+  | `factor`        | tournament's comp. factor for score calculations| FloatField  |
+  | `invite`        | discord invite link to the event server         | StringField |
+  | `conf`          | *not in use, reserved*                          | StringField |
+<br/>
+
+## Match
+  | Field           | Explanation                                     | Type        |
+  | :-------------: |:-----------------------------------------------:|:-----------:|
+  | `match_id**`    | unique identifier, e.g. "StDb-91.-2022-01-01"   | StringField |
+  | `clans1_ids`    | list of clan ids, side1                         | ListField   |
+  | `clans2_ids`    | list of clan ids, side2                         | ListField   |
+  | `player_dist1`  | player distributions, tag mapped to int         | DictField   |
+  | `player_dist2`  | player distributions, tag mapped to int         | DictField   |
+  | `side1`         | which fraction, allies or axis, side1           | StringField |
+  | `side2`         | which fraction, allies or axis, side2           | StringField |
+  | `caps1`         | number of strongpoints, side1                   | IntField    |
+  | `caps2`         | number of strongpoints, side2                   | IntField    |
+  | `players`       | number of players on each side                  | IntField    |
+  | `map`           | the map the match where played on               | StringField |
+  | `date`          | datetime of the match                           | DateField   |
+  | `duration`      | duration of the match in min                    | IntField    |
+  | `factor`        | competitive factor of the match                 | FloatField  |
+  | `event`         | event the match belongs to                      | StringField |
+  | `conf1`         | user id who confirmed the match for side 1      | StringField |
+  | `conf2`         | user id who confirmed the match for side 2      | StringField |
+<br/>
+
+## User
+  | Field           | Explanation                                     | Type        |
+  | :-------------: |:-----------------------------------------------:|:-----------:|
+  | `userid**`      | discord user id                                 | StringField |
+  | `pin`           | pin to log in                                   | StringField |
+  | `name`          | discord name, e.g. Soxxes                       | StringField |
+  | `role*`         | admin or teamrep                                | StringField |
+  | `clan`          | clan/team the user belongs to, e.g. CoRe        | StringField |
+  | `conf`          | *not in use, reserved*                          | StringField |
+<br/>
+
+## Score
+  | Field           | Explanation                                     | Type        |
+  | :-------------: |:-----------------------------------------------:|:-----------:|
+  | `clan*`         | clan the score belongs to                       | StringField |
+  | `num_matches*`  | number of matches, serves as a counter          | IntField    |
+  | `match_id*`     | match the score is based on                     | StringField |
+  | `score*`        | score of the clan                               | IntField    |
 <br/>

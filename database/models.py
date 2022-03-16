@@ -44,7 +44,7 @@ class Event(db.Document):
     name = db.StringField()
     # event emoji, e.g. :hpl:
     emoji = db.StringField()
-    # factor for score, e.g. extra sweaty = 1.3
+    # factor for score, e.g. extra sweaty = 1.2
     factor = db.FloatField()
     # discord invite link to the event's discord server
     invite = db.StringField()
@@ -92,7 +92,7 @@ class Match(db.Document):
     # how long the game lasted, max is 90 min
     duration     = db.IntField()
     # competitive factor, see HeLO calculations
-    factor       = db.DecimalField()
+    factor       = db.FloatField()
     # name of the tournament, of just a training match
     event        = db.StringField()
     # confirmation, very important
