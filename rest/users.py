@@ -84,8 +84,8 @@ class UserApi(Resource):
         except:
             return handle_error(f"error updating user in database, user not found by oid: {userid}")
 
-    # update user by object id
-    @jwt_required()
+    # delete user by object id
+    @admin_required()
     def delete(self, userid):
         try:
             user = User.objects(userid=userid)

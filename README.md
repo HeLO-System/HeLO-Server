@@ -18,6 +18,7 @@ there is still work in progress ...
   - [Login](#login)
 - [User Objects](#user-objects)
   - [Get User](#get-user)
+  - [Change User](#change-user)
 - [Models Overview](#models-overview)
   - [Clan](#clan)
   - [Event](#event)
@@ -416,6 +417,30 @@ Fetch user object from database by discord id.
 
 <br/>
 
+## Change User
+Change user object in the database.
+* **Endpoint:** */user/{id}*
+* **Method:** `PUT`
+* **JWT Required:** Yes
+* **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `PUT .../user/307305122940659340`<br/>
+    header:
+    ```
+    Token = yJ0eX...
+    ```
+    body:
+    ```
+    {
+      "name": "NotSoMasterMind1000"
+    }
+  * Response:
+    ```
+    204 NO CONTENT
+    
+    ```
+* **Note:** Even though updating a user requires no admin permissions, it is not possible to change the role of a user.
 
 # Models Overview
 All attributes and possible settings for the different objects. `*` means the field is required and `**` means the field is required and unique.
