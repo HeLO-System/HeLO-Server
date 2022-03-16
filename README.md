@@ -13,6 +13,8 @@ there is still work in progress ...
   - [Get Match](#get-match)
   - [Update Match](#update-match)
   - [Delete Match](#delete-match)
+- [Signup and Login](#signup-and-login)
+  - [Signup](#signup)
 
 # Routes Overview
 * /auth/signup
@@ -302,6 +304,28 @@ Delete a match object from the database.
 * **Method:** `DELETE`
 * **JWT Required:** Yes
 * **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `DELETE .../match/6231b2b0caa748197199bd48`<br/>
+    header:
+    ```
+    Token = yJ0eX...
+    ```
+  * Response:
+    ```
+    204 NO CONTENT
+    
+    ```
+
+<br/>
+
+# Signup and Login
+## Signup
+Create a new user.
+* **Endpoint:** */auth/signup*
+* **Method:** `POST`
+* **JWT Required:** Yes
+* **Admin Required:** Yes
 * **Example:** <br/>
   * Request: <br/>
     `DELETE .../match/6231b2b0caa748197199bd48`<br/>

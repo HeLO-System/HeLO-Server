@@ -11,6 +11,7 @@ from ._common import *
 
 class SignupApi(Resource):
     
+    @admin_required()
     def post(self):
         try:
             j = request.get_json()
