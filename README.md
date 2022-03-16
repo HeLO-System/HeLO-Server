@@ -223,12 +223,13 @@ Create a new clan object.
     ```
 * **Note:** Only the "match_id" is a required field and it is unique. However, everything else is required later to calculate the scores out of this match. A game has to be confirmed from both sides. More on that later (see "Update Matches").
 * **Further Explanation:**
-| Field           | Explanation                             |
-| :-------------: |:---------------------------------------:|
-| `clans_ids`     | `list` of unique ids                    |
-| `player_dist`   | mapping of clan tag to players (opt.)   |
-| `players`       | number of players fielded               |
-| `factor`        | competitive factor                      |
-| `caps`          | captured strongpoints                   |
+
+  | Field           | Explanation                             |
+  | :-------------: |:---------------------------------------:|
+  | `clans_ids`     | `list` of unique ids                    |
+  | `player_dist`   | mapping of clan tag to players (opt.)   |
+  | `players`       | number of players fielded               |
+  | `factor`        | competitive factor                      |
+  | `caps`          | captured strongpoints                   |
 
 <br/>
