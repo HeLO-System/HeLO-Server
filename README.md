@@ -19,12 +19,16 @@ there is still work in progress ...
 - [User Objects](#user-objects)
   - [Get User](#get-user)
   - [Change User](#change-user)
+  - [Delete User](#delete-user)
 - [Models Overview](#models-overview)
   - [Clan](#clan)
   - [Event](#event)
   - [Match](#match)
   - [User](#user)
   - [Score](#score)
+- [Coding Examples - Python](#coding-examples---python)
+  - [Simple `GET` request](#simple-get-request)
+  - [Simple `POST` request](#simple-post-request)
 
 # Routes Overview
 * /auth/signup
@@ -442,6 +446,27 @@ Change user object in the database.
     ```
 * **Note:** Even though updating a user requires no admin permissions, it is not possible to change the role of a user.
 
+<br/>
+
+## Delete User
+Delete a user object from the database.
+* **Endpoint:** */user/{id}*
+* **Method:** `DELETE`
+* **JWT Required:** Yes
+* **Admin Required:** Yes
+* **Example:** <br/>
+  * Request: <br/>
+    `DELETE .../user/307305122940659340`<br/>
+    header:
+    ```
+    Token = yJ0eX...
+    ```
+  * Response:
+    ```
+    204 NO CONTENT
+    
+    ```
+
 # Models Overview
 All attributes and possible settings for the different objects. `*` means the field is required and `**` means the field is required and unique.
 
@@ -510,3 +535,23 @@ All attributes and possible settings for the different objects. `*` means the fi
   | `match_id*`     | match the score is based on                     | StringField |
   | `score*`        | score of the clan                               | IntField    |
 <br/>
+
+# Coding Examples - Python
+## Simple `GET` request
+import the `requests` module and send a basic `GET` request:
+(final URL will be announced)
+```
+>>> import requests
+>>> r = requests.get("http://.../clan/62308f8a43a886c4ef1935a2")
+```
+unpack status code and payload
+```
+>>> r
+<Response [200]>
+>>> r.json()
+{'_id': {'$oid': '62308f8a43a886c4ef1935a2'}, 'tag': 'CoRe', 'name': 'Corvus Rex', 'score': 619, 'num_matches': 2, 'alt_tags': []}
+```
+<br/>
+
+## Simple `POST` request
+
