@@ -1,5 +1,18 @@
 # HeLO API
-Work in progress ...
+there is still work in progress ...
+
+- [HeLO API](#helo-api)
+- [Routes Overview](#routes-overview)
+- [Clan Objects](#clan-objects)
+  - [Get Clan](#get-clan)
+  - [Update Clan](#update-clan)
+  - [Delete Clan](#delete-clan)
+  - [Create Clan](#create-clan)
+- [Match Objects](#match-objects)
+  - [Create Match](#create-match)
+  - [Get Match](#get-match)
+  - [Update Match](#update-match)
+  - [Delete Match](#delete-match)
 
 # Routes Overview
 * /auth/signup
