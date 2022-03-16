@@ -134,5 +134,93 @@ Create a new clan object.
 * **Method:** `POST`
 * **JWT Required:** Yes
 * **Admin Required:** Yes
+* **Example:** <br/>
+  * Request: <br/>
+    `POST .../clans`<br/>
+    header:
+    ```
+    Token = yJ0eX...
+    ```
+    body:
+    ```
+    {
+        "tag": "CoRe",
+        "name": "Corvus Rex",
+        "invite": "https://discord.gg/M4DtuGcq8m",
+        "score": 700,
+        "num_matches": 22
+    }
+    ```
+  * Response:
+    ```
+    200 OK
+    "id: 6231be6d09e11eef9fbf8537"
+    ```
+* **Note:** Only "tag" is a required field. "score" and "num_matches" will be set automatically to their default values when they have not been sent. The response contains the unique id of the clan in the database.
+
+<br/>
+
+
+# Match Objects
+## Get Match
+Fetch a match object from the database.
+* **URL:** /match/{id}
+* **Method:** `GET`
+* **JWT Required:** No
+* **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `GET .../match/`<br/>
+  * Response:
+    ```
+    200 OK
+    "id: 6231be6d09e11eef9fbf8537"
+    ```
+* **Note:** Only "tag" is a required field. "score" and "num_matches" will be set automatically to their default values when they have not been sent. The response contains the unique id of the clan in the database.
+
+<br/>
+
+## Create a Match
+Create a new match object in the database.
+Create a new clan object.
+* **URL:** /matches
+* **Method:** `POST`
+* **JWT Required:** Yes
+* **Admin Required:** No
+* **Example:** <br/>
+  * Request: <br/>
+    `POST .../matches`<br/>
+    header:
+    ```
+    Token = yJ0eX...
+    ```
+    body:
+    ```
+    {
+      "match_id": "StDb+Phx-CoRe-15-03-2022",
+      "clans1_ids": ["62308f9743a886c4ef1935a3", "62308f7d43a886c4ef1935a1"],
+      "clans2_ids": ["62308f8a43a886c4ef1935a2"],
+      "player_dist1": {
+          "StDb": 35,
+          "Phx": 15
+      },
+      "player_dist2": {
+          "CoRe": 50
+      },
+      "players": 50,
+      "factor": 1.0,
+      "caps1": 1,
+      "caps2": 4
+    }
+    ```
+  * Response:
+    ```
+    200 OK
+    {
+      "match_id": "StDb+Phx-CoRe-15-03-2022",
+      "confirmed": false
+    }
+    ```
+* **Note:** 
 
 <br/>

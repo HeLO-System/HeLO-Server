@@ -35,7 +35,7 @@ class MatchApi(Resource):
                 clans1, clans2 = match.get_clan_objects()
                 scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
                 # check if it is a coop game or a normal game
-                if len(match.clans1.keys()) == 1 and len(match.clans2.keys()) == 1:
+                if len(match.player_dist1.keys()) == 1 and len(match.player_dist2.keys()) == 1:
                     score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score,
                                                         match.caps1, match.caps2,
                                                         clans1[0].num_matches,
@@ -55,8 +55,8 @@ class MatchApi(Resource):
                 else:
                     scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1,
                                                             match.caps2, match.factor,
-                                                            match.clans1.items(),
-                                                            match.clans2.items(),
+                                                            match.player_dist1.items(),
+                                                            match.player_dist2.items(),
                                                             match.players)
                     
                     # save new scores for both clan lists
@@ -102,8 +102,8 @@ class MatchesApi(Resource):
         try:
             select = request.args.get('select')
             match_id = request.args.get('match_id')
-            clans1 = request.args.get('clans1')
-            clans2 = request.args.get('clans2')
+            player_dist1 = request.args.get('player_dist1')
+            player_dist2 = request.args.get('player_dist2')
             clans1_ids = request.args.get('clans1_ids')
             clans2_ids = request.args.get('clans2_ids')
             # coop1_id = request.args.get('coop1_id')
@@ -124,9 +124,9 @@ class MatchesApi(Resource):
             #if clans1_ids != None: where &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
             if clans1_ids != None: where &= Q(clans1_ids=clans1_ids)
             if clans2_ids != None: where &= Q(clans2_ids=clans2_ids)
-            if clans1 != None: where &= Q(clans1=clans1)
+            if player_dist1 != None: where &= Q(clans1=player_dist1)
             #if coop1_id != None: where &= Q(coop1_id=coop1_id)
-            if clans2 != None: where &= Q(clans2=clans2)
+            if player_dist2 != None: where &= Q(clans2=player_dist2)
             #if coop2_id != None: where &= Q(coop2_id=coop2_id)
             if conf1 != None: where &= Q(conf1=conf1)
             if conf2 != None: where &= Q(conf2=conf2)

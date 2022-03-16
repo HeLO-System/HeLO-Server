@@ -61,11 +61,11 @@ class Match(db.Document):
     # unique identifiers (very long number) of the clan -> oid of the clan object in DB
     clans1_ids = db.ListField()
     clans2_ids = db.ListField()
-    # name of the clans (clan tag) mapped to the number of players they fielded
+    # clan tag mapped to the number of players they fielded
     # e.g. {"CoRe": 30, "StDb": 20}
-    # player distribution is not required, and should be None in this case
-    clans1 = db.DictField()
-    clans2 = db.DictField()
+    # player distribution is not required, and should be None if not provided
+    player_dist1 = db.DictField()
+    player_dist2 = db.DictField()
     """
     # unique identifier (very long number) of the clan -> oid of the clan object in DB
     clan1_id     = db.StringField()
