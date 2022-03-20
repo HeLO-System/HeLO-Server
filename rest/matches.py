@@ -28,7 +28,13 @@ class MatchApi(Resource):
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
             match.reload()
+
+            if not match.needs_confirmations() and not match.score_posted:
+                print("match confirmed")
+                err = match.calc_scores()
+                if err is not None: raise ValueError
             
+            """
             if not match.needs_confirmations():
                 print("match confirmed")
                 # calc scores
@@ -67,16 +73,16 @@ class MatchApi(Resource):
                         # create Score Objects
                         score_obj = Score.from_match(match, clan)
                         score_obj.save()
-
+                
                 if err is not None: raise ValueError
-
+                """
             
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")
         except DoesNotExist:
             return handle_error(f"error updating match in database, match not found by oid: {oid}")
         except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}")
+            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong")
         else:
             return '', 204
 

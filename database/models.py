@@ -3,6 +3,8 @@ from datetime import date
 from enum import unique
 from math import factorial
 from typing import Counter
+
+from logic.calculations import get_new_scores, get_coop_scores
 from .db import db
 from flask_bcrypt import generate_password_hash, check_password_hash
 
@@ -102,7 +104,6 @@ class Match(db.Document):
     conf1        = db.StringField()
     # user id of the user who confirmed the match for clan2
     conf2        = db.StringField()
-    # deprecated
     score_posted = db.BooleanField()
 
     def needs_confirmations(self):
@@ -117,6 +118,46 @@ class Match(db.Document):
         clans2 = [Clan.objects.get(id=oid) for oid in self.clans2_ids]
         return clans1, clans2
 
+    def calc_scores(self):
+        clans1, clans2 = self.get_clan_objects()
+        scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
+        # check if it is a coop game or a normal game
+        if len(self.clans1_ids) == 1 and len(self.clans2_ids) == 1:
+            score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score,
+                                                        self.caps1, self.caps2,
+                                                        clans1[0].num_matches,
+                                                        clans2[0].num_matches,
+                                                        self.factor, self.players)
+            clans1[0].score, clans2[0].score = score1, score2
+            clans1[0].num_matches += 1
+            clans2[0].num_matches += 1
+            clans1[0].save()
+            clans2[0].save()
+            # create Score Objects
+            score_obj1 = Score.from_match(self, clans1[0])
+            score_obj1.save()
+            score_obj2 = Score.from_match(self, clans2[0])
+            score_obj2.save()
+        
+        else:
+            scores1, scores2, err = get_coop_scores(scores1, scores2, self.caps1,
+                                                            self.caps2, self.factor,
+                                                            self.player_dist1.items(),
+                                                            self.player_dist2.items(),
+                                                            self.players)
+                    
+            # save new scores for both clan lists
+            for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
+                clan.score = score
+                clan.num_matches += 1
+                clan.save()
+                # create Score Objects
+                score_obj = Score.from_match(self, clan)
+                score_obj.save()
+
+            self.score_posted = True
+
+        return err
 
 """
 second level class
