@@ -106,6 +106,8 @@ class MatchesApi(Resource):
     # get all or filtered by match id
     def get(self):
         try:
+            # select grenzt angefragte Felder ein, z.B. select=match_id kommt nur
+            # die match_id zurück, nciht das ganze Objekt aus der DB
             select = request.args.get('select')
             match_id = request.args.get('match_id')
             player_dist1 = request.args.get('player_dist1')
@@ -137,6 +139,7 @@ class MatchesApi(Resource):
             if conf1 != None: where &= Q(conf1=conf1)
             if conf2 != None: where &= Q(conf2=conf2)
             if date != None: where &= Q(date=date)
+            # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
             if date_from != None: where &= Q(date__gte=date_from)
             if date_to != None: where &= Q(date__lte=date_to)
 

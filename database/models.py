@@ -1,8 +1,10 @@
 # database/models.py
 from datetime import date
+from email.policy import default
 from enum import unique
 from math import factorial
 from typing import Counter
+from typing_extensions import Required
 
 from logic.calculations import get_new_scores, get_coop_scores
 from .db import db
@@ -90,7 +92,7 @@ class Match(db.Document):
     # number of players on each side (assuming both teams had the same number of players)
     players      = db.IntField()
     map          = db.StringField()
-    date         = db.DateTimeField()
+    date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
     duration     = db.IntField()
     # competitive factor, see HeLO calculations
@@ -120,6 +122,8 @@ class Match(db.Document):
 
     def calc_scores(self):
         clans1, clans2 = self.get_clan_objects()
+        # hier nihct aus clan, sondern letztes Match object (vor diesem nehmen)
+        # z.b. über datum
         scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
         # check if it is a coop game or a normal game
         if len(self.clans1_ids) == 1 and len(self.clans2_ids) == 1:
@@ -128,12 +132,15 @@ class Match(db.Document):
                                                         clans1[0].num_matches,
                                                         clans2[0].num_matches,
                                                         self.factor, self.players)
+            # TODO: evtl. auslagern
             clans1[0].score, clans2[0].score = score1, score2
             clans1[0].num_matches += 1
             clans2[0].num_matches += 1
             clans1[0].save()
             clans2[0].save()
             # create Score Objects
+            # oder update, wenn Score Objekt bereits existiert, "upsert"
+            # nach match id, wenn schon da
             score_obj1 = Score.from_match(self, clans1[0])
             score_obj1.save()
             score_obj2 = Score.from_match(self, clans2[0])

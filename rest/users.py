@@ -11,12 +11,12 @@ from ._common import *
 
 class SignupApi(Resource):
     
-    @admin_required()
     def post(self):
         try:
             j = request.get_json()
             user = User(**j)
             user.hash_password()
+            # TODO: role auf default value setzen
             user.save()
             return get_response({ 'id': user.userid })
         except:
@@ -75,6 +75,7 @@ class UserApi(Resource):
                 # by checking the additional claim in JWT
                 if "role" in request.get_json().keys():
                     claims = get_jwt()
+                    # TODO: muss in die doku rein
                     if not claims["is_admin"]:
                         return "non-admins are not allowed to change their role", 401
                 user.update(**request.get_json())
@@ -123,6 +124,7 @@ class UsersApi(Resource):
 
 
     # add new user
+    # TODO: evtl. weg
     @jwt_required()
     def post(self):
         try:
