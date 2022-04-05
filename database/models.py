@@ -102,8 +102,10 @@ class Match(db.Document):
     conf1        = db.StringField()
     # user id of the user who confirmed the match for clan2
     conf2        = db.StringField()
-    # flag to check whether there exist corresponding score objects to the match
+    # flag to check whether corresponding score objects to the match exist or not
     score_posted = db.BooleanField()
+    # reserved for admins, necessary to start a recalculate process for this match
+    recalculate = db.BooleanField()
 
     def needs_confirmations(self):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
@@ -140,23 +142,28 @@ class Match(db.Document):
                                                             self.players)
 
         self._save_clans_and_scores(clans1, clans2, scores1, scores2)
-        #self.score_posted = True
+        self.score_posted = True
         self.save()
 
         return err
 
     def _save_clans_and_scores(self, clans1, clans2, scores1, scores2):
         for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
+            # get the score object which matches the match_id and the clan (id)
             score_obj = Score.objects(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
+            # update or insert if it does not exist
             res = score_obj.update_one(set__score=score, upsert=True, full_result=True)
 
-            # check if it was an insert or update
+            # check if it was an insert or update, this is important for the number of matches
             if res.raw_result.get("updatedExisting"):
                 clan.update(score=score)
             else:
                 clan.update(score=score, inc__num_matches=1)
                 clan.reload()
                 score_obj.update_one(set__num_matches=clan.num_matches)
+
+    def start_recalculation(self):
+        pass
 
 """
 second level class
@@ -228,3 +235,6 @@ class Score(db.Document):
     #     score.clan = str(clan.id)
     #     score.score_before = clan.score
     #     return score
+
+    def get_score_to_num_matches(self, clan_id, num_matches):
+        pass

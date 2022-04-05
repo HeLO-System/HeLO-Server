@@ -33,6 +33,13 @@ class MatchApi(Resource):
                 err = match.calc_scores()
                 if err is not None: raise ValueError
                 print("match confirmed")
+
+            claims = get_jwt()
+            # if an admin starts a recalculation process
+            # it's the only way to bypass the score_posted restriction
+            if match.recalculate and claims["is_admin"]:
+                match.start_recalculation()
+                print("match and scores recalculated")
             
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")
