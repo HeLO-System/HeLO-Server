@@ -131,19 +131,6 @@ class Match(db.Document):
                                                         self.factor, self.players)
             # for compatibility reasons
             scores1, scores2 = [score1], [score2]
-            # TODO: evtl. auslagern
-            # clans1[0].score, clans2[0].score = score1, score2
-            # clans1[0].num_matches += 1
-            # clans2[0].num_matches += 1
-            # clans1[0].save()
-            # clans2[0].save()
-            # # create Score Objects
-            # # oder update, wenn Score Objekt bereits existiert, "upsert"
-            # # nach match id, wenn schon da
-            # score_obj1 = Score.from_match(self, clans1[0])
-            # score_obj1.save()
-            # score_obj2 = Score.from_match(self, clans2[0])
-            # score_obj2.save()
         
         else:
             scores1, scores2, err = get_coop_scores(scores1, scores2, self.caps1,
@@ -151,50 +138,25 @@ class Match(db.Document):
                                                             self.player_dist1.items(),
                                                             self.player_dist2.items(),
                                                             self.players)
-                    
-        # save new scores for both clan and score lists
+
+        self._save_clans_and_scores(clans1, clans2, scores1, scores2)
+        #self.score_posted = True
+        self.save()
+
+        return err
+
+    def _save_clans_and_scores(self, clans1, clans2, scores1, scores2):
         for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
-            # clan.update(score=score, inc__num_matches=1)
-            # clan.score = score
-            # clan.num_matches += 1
-            # clan.save()
-            # create Score Objects
-            # check if there is a Score object matching the clan (id) and match_id
-            #score_objs = Score.objects.filter(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
             score_obj = Score.objects(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
             res = score_obj.update_one(set__score=score, upsert=True, full_result=True)
+
+            # check if it was an insert or update
             if res.raw_result.get("updatedExisting"):
                 clan.update(score=score)
             else:
                 clan.update(score=score, inc__num_matches=1)
                 clan.reload()
                 score_obj.update_one(set__num_matches=clan.num_matches)
-            # print(res.acknowledged)
-            # print(res.matched_count)
-            # print(res.modified_count)
-            # print(res.raw_result)
-            # print(type(score_obj))
-            # # if not, create it
-            # if not score_obj:
-            #     clan.num_matches += 1
-            #     score_obj = Score.from_match(self, clan)
-            #     score_obj.save()
-            #     print("score posted and saved")
-            # else:
-            #     #for score_obj in score_objs:
-            #     print(score_obj.clan)
-            #     score_obj.reload()
-            #     #score_obj.score = score
-            #     score_obj.update(score=score)
-            #     print("score udapted")
-
-        #self.score_posted = True
-        self.save()
-
-        return err
-
-    def _save_changes(self):
-        pass
 
 """
 second level class
