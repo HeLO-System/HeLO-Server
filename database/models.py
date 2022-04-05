@@ -167,6 +167,8 @@ class Match(db.Document):
                 clan.update(score=score)
             else:
                 clan.update(score=score, inc__num_matches=1)
+                clan.reload()
+                score_obj.update_one(set__num_matches=clan.num_matches)
             # print(res.acknowledged)
             # print(res.matched_count)
             # print(res.modified_count)
@@ -190,6 +192,9 @@ class Match(db.Document):
         self.save()
 
         return err
+
+    def _save_changes(self):
+        pass
 
 """
 second level class
