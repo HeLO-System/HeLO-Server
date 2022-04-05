@@ -19,6 +19,7 @@ class ScoreApi(Resource):
 
 
     # update scores by object id
+    # will be deleted soon
     @jwt_required()
     def put(self, oid):
         try:
@@ -66,6 +67,7 @@ class ScoresApi(Resource):
         
 
     # add new scores
+    # will be deleted soon
     @jwt_required()
     def post(self):
         try:

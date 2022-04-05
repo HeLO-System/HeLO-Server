@@ -28,7 +28,7 @@ class MatchApi(Resource):
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
             match.reload()
-
+            
             if not match.needs_confirmations() and not match.score_posted:
                 print("match confirmed")
                 err = match.calc_scores()

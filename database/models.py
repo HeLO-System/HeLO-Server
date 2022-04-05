@@ -1,10 +1,5 @@
 # database/models.py
 from datetime import date
-from email.policy import default
-from enum import unique
-from math import factorial
-from typing import Counter
-from typing_extensions import Required
 
 from logic.calculations import get_new_scores, get_coop_scores
 from .db import db
@@ -132,19 +127,21 @@ class Match(db.Document):
                                                         clans1[0].num_matches,
                                                         clans2[0].num_matches,
                                                         self.factor, self.players)
+            # for compatibility reasons
+            scores1, scores2 = [score1], [score2]
             # TODO: evtl. auslagern
-            clans1[0].score, clans2[0].score = score1, score2
-            clans1[0].num_matches += 1
-            clans2[0].num_matches += 1
-            clans1[0].save()
-            clans2[0].save()
-            # create Score Objects
-            # oder update, wenn Score Objekt bereits existiert, "upsert"
-            # nach match id, wenn schon da
-            score_obj1 = Score.from_match(self, clans1[0])
-            score_obj1.save()
-            score_obj2 = Score.from_match(self, clans2[0])
-            score_obj2.save()
+            # clans1[0].score, clans2[0].score = score1, score2
+            # clans1[0].num_matches += 1
+            # clans2[0].num_matches += 1
+            # clans1[0].save()
+            # clans2[0].save()
+            # # create Score Objects
+            # # oder update, wenn Score Objekt bereits existiert, "upsert"
+            # # nach match id, wenn schon da
+            # score_obj1 = Score.from_match(self, clans1[0])
+            # score_obj1.save()
+            # score_obj2 = Score.from_match(self, clans2[0])
+            # score_obj2.save()
         
         else:
             scores1, scores2, err = get_coop_scores(scores1, scores2, self.caps1,
@@ -153,16 +150,18 @@ class Match(db.Document):
                                                             self.player_dist2.items(),
                                                             self.players)
                     
-            # save new scores for both clan lists
-            for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
-                clan.score = score
-                clan.num_matches += 1
-                clan.save()
-                # create Score Objects
-                score_obj = Score.from_match(self, clan)
-                score_obj.save()
+        # save new scores for both clan lists
+        for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
+            clan.score = score
+            clan.num_matches += 1
+            clan.save()
+            # create Score Objects
+            score_obj = Score.from_match(self, clan)
+            score_obj.save()
 
-            self.score_posted = True
+        self.score_posted = True
+        self.save()
+        print("score posted and saved")
 
         return err
 
