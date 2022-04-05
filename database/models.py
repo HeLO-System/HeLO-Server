@@ -66,19 +66,6 @@ class Match(db.Document):
     # player distribution is not required, and should be None if not provided
     player_dist1 = db.DictField()
     player_dist2 = db.DictField()
-    """
-    # unique identifier (very long number) of the clan -> oid of the clan object in DB
-    clan1_id     = db.StringField()
-    # name of the clan (clan tag)
-    clan1        = db.StringField()
-    # if clan1 played with another clan
-    coop1_id     = db.StringField()
-    coop1        = db.StringField()
-    clan2_id     = db.StringField()
-    clan2        = db.StringField()
-    coop2_id     = db.StringField()
-    coop2        = db.StringField()
-    """
     # allies or axis
     side1        = db.StringField()
     side2        = db.StringField()
@@ -105,6 +92,7 @@ class Match(db.Document):
     # flag to check whether corresponding score objects to the match exist or not
     score_posted = db.BooleanField()
     # reserved for admins, necessary to start a recalculate process for this match
+    # will be set only temporarily
     recalculate = db.BooleanField()
 
     def needs_confirmations(self):
@@ -119,17 +107,23 @@ class Match(db.Document):
         clans2 = [Clan.objects.get(id=oid) for oid in self.clans2_ids]
         return clans1, clans2
 
-    def calc_scores(self):
+    def calc_scores(self, scores=None, num_matches=None):
         clans1, clans2 = self.get_clan_objects()
         # hier nihct aus clan, sondern letztes Match object (vor diesem nehmen)
         # z.b. über datum
-        scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
+        if scores is None and num_matches is None:
+            scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
+            num_matches1, num_matches2 = [[clan.num_matches for clan in clans1], [clan.num_matches for clan in clans2]]
+        else:
+            scores1, scores2 = scores[0], scores[1]
+            num_matches1, num_matches2 = num_matches[0], num_matches[1]
+
         # check if it is a coop game or a normal game
         if len(self.clans1_ids) == 1 and len(self.clans2_ids) == 1:
-            score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score,
+            score1, score2, err = get_new_scores(scores1[0], scores2[0],
                                                         self.caps1, self.caps2,
-                                                        clans1[0].num_matches,
-                                                        clans2[0].num_matches,
+                                                        num_matches1[0],
+                                                        num_matches2[0],
                                                         self.factor, self.players)
             # for compatibility reasons
             scores1, scores2 = [score1], [score2]
@@ -163,8 +157,23 @@ class Match(db.Document):
                 score_obj.update_one(set__num_matches=clan.num_matches)
 
     def start_recalculation(self):
-        pass
-
+        """
+        1) letztes Match der beteiligten Teams über aktuelles Score Objekt
+        mit num_matches und clan_id holen
+        2) Datum des
+        """
+        clans1, clans2 = self.get_clan_objects()
+        # scores1, scores2 = [[Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))).score for clan in clans1],
+        #                             [Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))).score for clan in clans2]]
+        score1_objs, score2_objs = [[Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))) for clan in clans1],
+                                    [Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))) for clan in clans2]]
+        scores1, scores2 = [[score_obj.score for score_obj in score1_objs],
+                            [score_obj.score for score_obj in score2_objs]]
+        num_matches1, num_matches2 = [[score_obj.num_matches for score_obj in score1_objs],
+                                        [score_obj.num_matches for score_obj in score2_objs]]
+        print(num_matches1, num_matches2)
+        print(scores1, scores2)
+        
 """
 second level class
 """
@@ -236,5 +245,6 @@ class Score(db.Document):
     #     score.score_before = clan.score
     #     return score
 
-    def get_score_to_num_matches(self, clan_id, num_matches):
-        pass
+    @staticmethod
+    def get_score_object(clan_id: str, num_matches: int):
+        return Score.objects(Q(num_matches=num_matches) & Q(clan=clan_id))
