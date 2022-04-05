@@ -30,52 +30,9 @@ class MatchApi(Resource):
             match.reload()
             
             if not match.needs_confirmations() and not match.score_posted:
-                print("match confirmed")
                 err = match.calc_scores()
                 if err is not None: raise ValueError
-            
-            """
-            if not match.needs_confirmations():
                 print("match confirmed")
-                # calc scores
-                clans1, clans2 = match.get_clan_objects()
-                scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
-                # check if it is a coop game or a normal game
-                if len(match.player_dist1.keys()) == 1 and len(match.player_dist2.keys()) == 1:
-                    score1, score2, err = get_new_scores(clans1[0].score, clans2[0].score,
-                                                        match.caps1, match.caps2,
-                                                        clans1[0].num_matches,
-                                                        clans2[0].num_matches,
-                                                        match.factor, match.players)
-                    clans1[0].score, clans2[0].score = score1, score2
-                    clans1[0].num_matches += 1
-                    clans2[0].num_matches += 1
-                    clans1[0].save()
-                    clans2[0].save()
-                    # create Score Objects
-                    score_obj1 = Score.from_match(match, clans1[0])
-                    score_obj1.save()
-                    score_obj2 = Score.from_match(match, clans2[0])
-                    score_obj2.save()
-
-                else:
-                    scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1,
-                                                            match.caps2, match.factor,
-                                                            match.player_dist1.items(),
-                                                            match.player_dist2.items(),
-                                                            match.players)
-                    
-                    # save new scores for both clan lists
-                    for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
-                        clan.score = score
-                        clan.num_matches += 1
-                        clan.save()
-                        # create Score Objects
-                        score_obj = Score.from_match(match, clan)
-                        score_obj.save()
-                
-                if err is not None: raise ValueError
-                """
             
         except OperationError:
             return handle_error(f"error updating match in database: {oid}")

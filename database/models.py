@@ -3,6 +3,7 @@ from datetime import date
 
 from logic.calculations import get_new_scores, get_coop_scores
 from .db import db
+from mongoengine.queryset.visitor import Q
 from flask_bcrypt import generate_password_hash, check_password_hash
 
 
@@ -101,6 +102,7 @@ class Match(db.Document):
     conf1        = db.StringField()
     # user id of the user who confirmed the match for clan2
     conf2        = db.StringField()
+    # flag to check whether there exist corresponding score objects to the match
     score_posted = db.BooleanField()
 
     def needs_confirmations(self):
@@ -150,18 +152,42 @@ class Match(db.Document):
                                                             self.player_dist2.items(),
                                                             self.players)
                     
-        # save new scores for both clan lists
+        # save new scores for both clan and score lists
         for clan, score in list(zip(clans1, scores1)) + list(zip(clans2, scores2)):
-            clan.score = score
-            clan.num_matches += 1
-            clan.save()
+            # clan.update(score=score, inc__num_matches=1)
+            # clan.score = score
+            # clan.num_matches += 1
+            # clan.save()
             # create Score Objects
-            score_obj = Score.from_match(self, clan)
-            score_obj.save()
+            # check if there is a Score object matching the clan (id) and match_id
+            #score_objs = Score.objects.filter(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
+            score_obj = Score.objects(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
+            res = score_obj.update_one(set__score=score, upsert=True, full_result=True)
+            if res.raw_result.get("updatedExisting"):
+                clan.update(score=score)
+            else:
+                clan.update(score=score, inc__num_matches=1)
+            # print(res.acknowledged)
+            # print(res.matched_count)
+            # print(res.modified_count)
+            # print(res.raw_result)
+            # print(type(score_obj))
+            # # if not, create it
+            # if not score_obj:
+            #     clan.num_matches += 1
+            #     score_obj = Score.from_match(self, clan)
+            #     score_obj.save()
+            #     print("score posted and saved")
+            # else:
+            #     #for score_obj in score_objs:
+            #     print(score_obj.clan)
+            #     score_obj.reload()
+            #     #score_obj.score = score
+            #     score_obj.update(score=score)
+            #     print("score udapted")
 
-        self.score_posted = True
+        #self.score_posted = True
         self.save()
-        print("score posted and saved")
 
         return err
 
@@ -208,7 +234,7 @@ class Score(db.Document):
     # IMPORTANT: clan.score must be updated first!
     # score_before = db.IntField(required=True)
 
-    def __init__(self, clan: str, num_matches: int, match_id: str, score: int):
+    def __init__(self, clan: str, num_matches: int, match_id: str, score: int, *args, **kwargs):
         super().__init__()
         self.clan = clan
         self.num_matches = num_matches
