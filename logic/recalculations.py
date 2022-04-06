@@ -24,18 +24,3 @@ class Node:
             for child in n.children:
                 if not child.visited:
                     queue.append(child)
-                
-node1 = Node(1)
-node2 = Node(2)
-node3 = Node(3)
-node4 = Node(4)
-node5 = Node(5)
-node6 = Node(6)
-
-node1.children = [node2, node3]
-node2.children = [node6, node5]
-node3.children = [node4]
-
-for n in node1.breadth_first():
-    print(n.payload)
-

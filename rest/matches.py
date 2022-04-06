@@ -36,7 +36,8 @@ class MatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate and claims["is_admin"]:
-                match.start_recalculation()
+                #match.start_recalculation()
+                match.recalculate_maulwuerfelchen()
                 print("match and scores recalculated")
             
         except OperationError:
