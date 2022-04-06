@@ -105,6 +105,7 @@ class Match(db.Document):
             return True
 
     def get_clan_objects(self):
+        print(self.clans1_ids)
         clans1 = [Clan.objects.get(id=oid) for oid in self.clans1_ids]
         clans2 = [Clan.objects.get(id=oid) for oid in self.clans2_ids]
         return clans1, clans2
@@ -236,8 +237,8 @@ class Match(db.Document):
         returns the scores and number of matches the clans had BEFORE that particluar match
         """
         # after the match
-        score1_objs, score2_objs = [[Score.get_by_clan_id(match.match_id, str(clan.id)) for clan in clans1],
-                                    [Score.get_by_clan_id(match.match_id, str(clan.id)) for clan in clans2]]
+        score1_objs, score2_objs = [[Score.get_by_clan_id(match, str(clan.id)) for clan in clans1],
+                                    [Score.get_by_clan_id(match, str(clan.id)) for clan in clans2]]
 
         num_matches1, num_matches2 = [[score_obj.num_matches - 1 for score_obj in score1_objs],
                                         [score_obj.num_matches - 1 for score_obj in score2_objs]]
@@ -324,8 +325,24 @@ class Score(db.Document):
     #     return score
 
     @staticmethod
-    def get_by_clan_id(match_id: str, clan_id: str):
-        return Score.objects.get(Q(match_id=match_id) & Q(clan=clan_id))
+    def get_by_clan_id(match: Match, clan_id: str):
+        try:
+            return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
+        # if the match haven't been confirmed, there won't be a matching Score object
+        # in this case, find the last match by date
+        except DoesNotExist:
+            matches = []
+            for match in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=clan_id) | (Q(clans2_ids__in=clan_id)))):
+                if match.match_id == match.match_id:
+                    continue
+                else:
+                    matches.append(match)
+            print("in Score Exception", matches)
+            matches.sort(key=lambda x: x.date, reverse=True)
+            try:
+                return Score.get_by_clan_id(matches[0], clan_id)
+            except IndexError:
+                return Score(clan_id, 0, "DefaultScore", 600)
 
     @staticmethod
     def get_by_num_matches(clan_id: str, num_matches: int):
