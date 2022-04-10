@@ -305,13 +305,10 @@ class Score(db.Document):
             # sort matches, latest (before the current) first
             # e.g. 2022-03-03 -> 2022-03-02 -> ...
             matches.sort(key=lambda x: x.date, reverse=True)
-            for match in matches:
-                print(match.match_id)
             # if there is no match at all, return default score object with 600
             try:
                 return Score.get_by_clan_id(matches[0], clan_id)
             except IndexError:
-                print("returning default score for", clan_id)
                 return Score(clan_id, 0, "DefaultScore", 600)
 
     @staticmethod
@@ -319,5 +316,4 @@ class Score(db.Document):
         try:
             return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
         except DoesNotExist:
-            print("returning default score for", clan_id)
             return Score(clan_id, 0, "DefaultScore", 600)
