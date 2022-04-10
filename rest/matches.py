@@ -37,7 +37,7 @@ class MatchApi(Resource):
             # it's the only way to bypass the score_posted restriction
             if match.recalculate and claims["is_admin"]:
                 #match.start_recalculation()
-                match.recalculate_maulwuerfelchen()
+                match.start_recalculation()
                 print("match and scores recalculated")
             
         except OperationError:
@@ -46,6 +46,8 @@ class MatchApi(Resource):
             return handle_error(f"error updating match in database, match not found by oid: {oid}")
         except ValueError:
             return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong")
+        except RuntimeError:
+            return handle_error(f"error updating match - a clan cannot play against itself")
         else:
             return '', 204
 

@@ -2,7 +2,6 @@
 from datetime import date
 
 from logic.calculations import get_new_scores, get_coop_scores
-#from logic.recalculations import Node
 from .db import db
 from mongoengine.queryset.visitor import Q
 from mongoengine.errors import DoesNotExist
@@ -22,19 +21,14 @@ class Clan(db.Document):
     # discord invite link to a clan's discord server
     invite = db.StringField()
     # current HeLO Score
-    score = db.IntField()
+    score = db.IntField(default=600)
     # number of games
-    num_matches = db.IntField()
+    num_matches = db.IntField(default=0)
     # confirmation, reserved ??
     conf = db.StringField()
     # alternative tags, if a clan was renamed, reserved
     alt_tags = db.ListField()
     
-    # will be called when the Clan Object is initialized
-    # sets the default values for number of matches and score
-    def set_default_values(self):
-        if self.num_matches is None: self.num_matches = 0
-        if self.score is None: self.score = 600
 
 """
 first level class
@@ -105,7 +99,6 @@ class Match(db.Document):
             return True
 
     def get_clan_objects(self):
-        print(self.clans1_ids)
         clans1 = [Clan.objects.get(id=oid) for oid in self.clans1_ids]
         clans2 = [Clan.objects.get(id=oid) for oid in self.clans2_ids]
         return clans1, clans2
@@ -120,6 +113,10 @@ class Match(db.Document):
         else:
             scores1, scores2 = scores[0], scores[1]
             num_matches1, num_matches2 = num_matches[0], num_matches[1]
+
+        if set(clans1) & set(clans2):
+            # a clan cannot play against itself
+            raise RuntimeError
 
         # check if it is a coop game or a normal game
         if len(self.clans1_ids) == 1 and len(self.clans2_ids) == 1:
@@ -157,47 +154,11 @@ class Match(db.Document):
             else:
                 clan.update(score=score, inc__num_matches=1)
                 clan.reload()
+                # TODO: BUG, if there is no Score object and we recalculate, the num_matches is set
+                # to the clan's num_matches, even if this isn't the true num_matches
                 score_obj.update_one(set__num_matches=clan.num_matches)
 
     def start_recalculation(self):
-
-        payload = {
-            "match": self
-        }
-        #root = Node(payload)
-
-
-
-        # clans1, clans2 = self.get_clan_objects()
-        # # scores1, scores2 = [[Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))).score for clan in clans1],
-        # #                             [Score.objects.get(Q(match_id=self.match_id) & Q(clan=str(clan.id))).score for clan in clans2]]
-        # score1_objs, score2_objs = [[Score.get_by_clan_id(self.match_id, str(clan.id)) for clan in clans1],
-        #                             [Score.get_by_clan_id(self.match_id, str(clan.id)) for clan in clans2]]
-        # scores1, scores2 = [[score_obj.score for score_obj in score1_objs],
-        #                     [score_obj.score for score_obj in score2_objs]]
-        # num_matches1, num_matches2 = [[score_obj.num_matches for score_obj in score1_objs],
-        #                                 [score_obj.num_matches for score_obj in score2_objs]]
-        # print(num_matches1, num_matches2)
-        # print(scores1, scores2)
-
-    @staticmethod
-    def _find_next_matches(match):
-        """
-        searches the database for the next matches (for every team participated)
-        after the given match by the number of matches,
-        recall num_matches serves as a counter to create a unique order of the matches
-        a team played
-        """
-        clans1, clans2 = match.get_clan_objects()
-        score1_objs, score2_objs = [[Score.get_by_clan_id(match.match_id, str(clan.id)) for clan in clans1],
-                                    [Score.get_by_clan_id(match.match_id, str(clan.id)) for clan in clans2]]
-        num_matches1, num_matches2 = [[score_obj.num_matches for score_obj in score1_objs],
-                                        [score_obj.num_matches for score_obj in score2_objs]]
-        next_score1_objs, next_score2_objs = [[Score.get_by_num_matches(match.match_id, num) for num in num_matches1],
-                                                [Score.get_by_num_matches(match.match_id, num) for num in num_matches2]]
-        #next_matches1, next_matches2 = []
-
-    def recalculate_maulwuerfelchen(self):
         clans1, clans2 = self.get_clan_objects()
         scores, num_matches = Match._get_scores_and_num_matches(self, clans1, clans2)
         # calculate new scores
@@ -207,12 +168,12 @@ class Match(db.Document):
         updated_teams = clans1 + clans2
 
         # get all matches where date is greater
-        # mote, that some teams play multiple games on one day
+        # note, that some teams play multiple games on one day
         # that's why we use gte = greater than or equal to
         # but this also delivers the same match as self ...
         all_matches = []
         for match in Match.objects(date__gte=self.date):
-            # ... just drop it
+            # ... just discard it
             if match.match_id == self.match_id:
                 continue
             else:
@@ -224,12 +185,13 @@ class Match(db.Document):
             print(match.date)
             clans1, clans2 = match.get_clan_objects()
             updated_teams.extend(clans1 + clans2)
-            # makes searching more effiecient if there are no dublicates
+            # makes searching more efficient if there are no dublicates
             updated_teams = list(set(updated_teams))
             scores, num_matches = Match._get_scores_and_num_matches(match, clans1, clans2)
             _ = match.calc_scores(scores, num_matches)
-    
+        
         self.recalculate = False
+        self.save()
 
     @staticmethod
     def _get_scores_and_num_matches(match, clans1, clans2):
@@ -316,32 +278,43 @@ class Score(db.Document):
         """
         # clan.id is the oid of the Clan object in the DB
         return cls(str(clan.id), clan.num_matches, match.match_id, clan.score)
-    
-    # def new_from_match(match:Match, clan:Clan):
-    #     score = Scores()
-    #     score.match = match.match_id
-    #     score.clan = str(clan.id)
-    #     score.score_before = clan.score
-    #     return score
 
     @staticmethod
     def get_by_clan_id(match: Match, clan_id: str):
         try:
+            print("first try:", match.match_id)
             return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
         # if the match haven't been confirmed, there won't be a matching Score object
         # in this case, find the last match by date
         except DoesNotExist:
             matches = []
-            for match in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=clan_id) | (Q(clans2_ids__in=clan_id)))):
-                if match.match_id == match.match_id:
+            # print("clan id:", clan_id)
+            # for match in Match.objects(Q(date__lte=match.date)):
+            #     print(match.match_id)
+            # print("---")
+            # for match in Match.objects(Q(clans1_ids__in=[clan_id])):
+            #     print("clans1_ids", match.match_id)
+            # print("---")
+            # for match in Match.objects(Q(clans2_ids__in=[clan_id])):
+            #     print("clans2_ids", match.match_id)
+            print("in Score execption, before for:")
+            for match in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
+                print("second try:", match.match_id)
+            for m in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
+                if m.match_id == match.match_id:
                     continue
                 else:
-                    matches.append(match)
+                    matches.append(m)
             print("in Score Exception", matches)
+            # sort matches, latest (before the current) first
             matches.sort(key=lambda x: x.date, reverse=True)
+            for match in matches:
+                print(match.match_id)
+            # if there is no match at all, return default score object with 600
             try:
                 return Score.get_by_clan_id(matches[0], clan_id)
             except IndexError:
+                print("returning default score for", clan_id)
                 return Score(clan_id, 0, "DefaultScore", 600)
 
     @staticmethod
