@@ -143,10 +143,8 @@ class Match(db.Document):
 
     def _save_clans_and_scores(self, clans1, clans2, scores1, scores2, num_matches1, num_matches2, recalculate=False):
         for clan, score, num_matches in list(zip(clans1, scores1, num_matches1)) + list(zip(clans2, scores2, num_matches2)):
-            print("clan, score, num_matches:", clan.name, score, num_matches)
             # get the score object which matches the match_id and the clan (id)
             score_queryset = Score.objects(Q(match_id=self.match_id) & Q(clan=str(clan.id)))
-            print(type(score_queryset))
             # update or insert if it does not exist
             res = score_queryset.update_one(set__score=score, upsert=True, full_result=True)
 
@@ -158,28 +156,14 @@ class Match(db.Document):
                 if recalculate:
                     # +1, because the num_matches is before the score has been calculated
                     # we need to replace the matching score object's num_matches after the calculation
-                    print("clan num matches:", clan.id, num_matches+1)
-                    old_score_queryset = Score.objects(Q(clan=str(clan.id)) & Q(num_matches=num_matches+1))
-                    #old_score_queryset = Score.objects(Q(clan=str(clan.id)) & Q(match_id=self.match_id))
-                    print("old score query set:", old_score_queryset)
-                    #old_score_obj = Score.get_by_num_matches(str(clan.id), num_matches=num_matches+1)
-                    for score in old_score_queryset:
-                        print("old:", score.clan, score.num_matches, score.match_id)
-                    # try:
-                    #     num = old_score_queryset.get().num_matches
-                    # except DoesNotExist:
-                    #     num = num_matches + 1
                     num = num_matches + 1
-                    print(num)
-                    # if num == 1:
-                    #     break
+                    old_score_queryset = Score.objects(Q(clan=str(clan.id)) & Q(num_matches=num))
                     # order of these updates is important, I don't know why,
                     # but it costed me a lot of time to figure it out
                     old_score_queryset.update_one(inc__num_matches=1)
                     score_queryset.update_one(set__num_matches=num)
 
                 else:
-                    # clan.update(score=score, inc__num_matches=1)
                     clan.reload()
                     # TODO: BUG, if there is no Score object and we recalculate, the num_matches is set
                     # to the clan's num_matches, even if this isn't the true num_matches
@@ -188,10 +172,8 @@ class Match(db.Document):
 
     def start_recalculation(self):
         clans1, clans2 = self.get_clan_objects()
-        #scores, num_matches = Match._get_scores_and_num_matches(self, clans1, clans2)
         scores1, num_matches1 = zip(*[self._get_score_and_num_matches(clan) for clan in clans1])
         scores2, num_matches2 = zip(*[self._get_score_and_num_matches(clan) for clan in clans2])
-        print("scores1, scores2:", scores1, scores2)
         # calculate new scores
         err = self.calc_scores(scores1, num_matches1, scores2, num_matches2)
 
@@ -213,46 +195,26 @@ class Match(db.Document):
         # sort all matches by ascending date
         all_matches.sort(key=lambda x: x.date)
         for match in all_matches:
-            print(match.date)
             clans1, clans2 = match.get_clan_objects()
             updated_teams.extend(clans1 + clans2)
             # makes searching more efficient if there are no dublicates
             updated_teams = list(set(updated_teams))
-            #scores, num_matches = match._get_scores_and_num_matches(clans1, clans2)
+            # get the scores and number of matches for the recalculation
+            # TODO: make this more efficient by storing all scores and num_matches
+            # then we do not have to make database calls
             scores1, num_matches1 = zip(*[match._get_score_and_num_matches(clan) for clan in clans1])
             scores2, num_matches2 = zip(*[match._get_score_and_num_matches(clan) for clan in clans2])
-            print("Scores before Calculation:", scores1, scores2)
             _ = match.calc_scores(scores1, num_matches1, scores2, num_matches2, recalculate=True)
         
         self.recalculate = False
         self.save()
 
-    def _get_scores_and_num_matches(self, clans1, clans2):
-        """
-        ugly helper method
-        returns the scores and number of matches the clans had BEFORE that particluar match
-        """
-        # after the match
-        score1_objs, score2_objs = [[Score.get_by_clan_id(self, str(clan.id)) for clan in clans1],
-                                    [Score.get_by_clan_id(self, str(clan.id)) for clan in clans2]]
-        
-        # - 1 nur um die richtigen Score Objekte zu finden ? für Berechnungen nicht
-        num_matches1, num_matches2 = [[score_obj.num_matches - 1 for score_obj in score1_objs],
-                                        [score_obj.num_matches - 1 for score_obj in score2_objs]]
-
-        # before the match, i.e. find the match before that
-        # if dfeault score
-        score1_objs, score2_objs = [[Score.get_by_num_matches(str(clan.id), num) for clan, num in zip(clans1, num_matches1)],
-                                    [Score.get_by_num_matches(str(clan.id), num) for clan, num in zip(clans2, num_matches2)]]
-        scores1, scores2 = [[score_obj.score for score_obj in score1_objs],
-                        [score_obj.score for score_obj in score2_objs]]
-        return (scores1, scores2), ([num + 1 for num in num_matches1], [num + 1 for num in num_matches2])
-
     def _get_score_and_num_matches(self, clan):
         score_obj = Score.get_by_clan_id(self, str(clan.id))
         num = score_obj.num_matches
-        # wenn kein Score Objekt existiert, weil das Match neu hinzugefügt wurde
-        # dann brauchen wir nicht zusätzlich den Schritt zurück gehen
+        # if there does not exist a score object, because the match was added afterwards,
+        # then we do not have to go back another step / take the score object before that
+        # otherwise we need to use the old score (one match before the given match)
         if self.score_posted:
             score_obj = Score.get_by_num_matches(str(clan.id), num - 1)
         score = score_obj.score
@@ -328,37 +290,18 @@ class Score(db.Document):
     @staticmethod
     def get_by_clan_id(match: Match, clan_id: str):
         try:
-            print("first try:", match.match_id)
-            # return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
-            score = Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
-            print(score.score)
-            return score
+            return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
         # if the match haven't been confirmed, there won't be a matching Score object
         # in this case, find the last (before the given one) match by date
         except DoesNotExist:
             matches = []
-            # print("clan id:", clan_id)
-            # for match in Match.objects(Q(date__lte=match.date)):
-            #     print(match.match_id)
-            # print("---")
-            # for match in Match.objects(Q(clans1_ids__in=[clan_id])):
-            #     print("clans1_ids", match.match_id)
-            # print("---")
-            # for match in Match.objects(Q(clans2_ids__in=[clan_id])):
-            #     print("clans2_ids", match.match_id)
-            print("in Score execption, before for")
-            # for match in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
-            #     print("second try:", match.match_id)
-
             for m in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
-                print("second try:", match.match_id)
                 # discard the match itself, but we need 'lte' in case there is
                 # another match on this day
                 if m.match_id == match.match_id:
                     continue
                 else:
                     matches.append(m)
-            print("in Score Exception", matches)
             # sort matches, latest (before the current) first
             # e.g. 2022-03-03 -> 2022-03-02 -> ...
             matches.sort(key=lambda x: x.date, reverse=True)
@@ -368,17 +311,13 @@ class Score(db.Document):
             try:
                 return Score.get_by_clan_id(matches[0], clan_id)
             except IndexError:
-                print("[MATCH]: returning default score for", clan_id)
+                print("returning default score for", clan_id)
                 return Score(clan_id, 0, "DefaultScore", 600)
 
     @staticmethod
     def get_by_num_matches(clan_id: str, num_matches: int):
-        print("num matches in NUM:", num_matches)
         try:
-            # return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
-            score = Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
-            print("in by num matches:", score.score)
-            return score
+            return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
         except DoesNotExist:
-            print("[NUM]: returning default score for", clan_id)
+            print("returning default score for", clan_id)
             return Score(clan_id, 0, "DefaultScore", 600)
