@@ -8,6 +8,8 @@ from database.db import db
 class Clan(db.Document):
     # e.g. StDb for Stoßtrupp Donnerbalken
     tag = db.StringField(required=True, unique=True)
+    # tag in lowercase to make searching more efficient
+    _tag_lower = db.StringField(default=str(tag).lower(), unique=True)
     # full name
     name = db.StringField()
     # discord icon flag, e.g. :flag_eu:, :flag_de:, ...
@@ -22,3 +24,12 @@ class Clan(db.Document):
     conf = db.StringField()
     # alternative tags, if a clan was renamed, reserved
     alt_tags = db.ListField()
+    # link to the icon of a clan
+    icon = db.StringField(default="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1")
+    meta = {
+        "indexes": [
+            {
+                "fields": ["$tag", "$name"]
+            }
+        ]
+    }

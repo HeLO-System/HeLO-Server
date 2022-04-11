@@ -44,6 +44,13 @@ class Match(db.Document):
     # reserved for admins, necessary to start a recalculate process for this match
     # will be set only temporarily
     recalculate = db.BooleanField()
+    meta = {
+        "indexes": [
+            {
+                "fields": ["$match_id", "$map"]
+            }
+        ]
+    }
 
     def needs_confirmations(self):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
