@@ -1,9 +1,11 @@
 # rest/matches.py
 from flask import request
 from flask_restful import Resource
-from logic.calculations import *
-from database.models import Clan, Score
-from ._common import *
+
+from logic.helo_functions import get_win_prob, get_new_scores
+from models.clan import Clan
+from models.score import Score
+from ._common import get_response, handle_error
 
 # helper for getting data for the clan name in the given input parameter
 def get_score_for_arg(arg):   

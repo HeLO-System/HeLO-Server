@@ -4,8 +4,9 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 from werkzeug.exceptions import BadRequest
-from database.models import Clan
-from ._common import *
+
+from models.clan import Clan
+from ._common import get_response, handle_error, admin_required
 
 
 class ClanApi(Resource):

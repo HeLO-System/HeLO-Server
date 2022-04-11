@@ -1,118 +1,84 @@
-# logic/calculations.py
-import logging
-import math
-import numpy as np
+"""
+Score Calculation and Database Interactions
+"""
+
+from mongoengine.queryset.visitor import Q
+
+from logic.helo_functions import get_new_scores, get_coop_scores
+from models.match import Match
+from models.score import Score
+from ._getter import get_clan_objects
 
 
-def get_win_prob(score1, score2):
-    """Calculates the probability of winning for the better team.
+def calc_scores(match: Match, scores1=None, num_matches1=None, scores2=None, num_matches2=None, recalculate=False):
+        clans1, clans2 = get_clan_objects(match)
+        # hier nihct aus clan, sondern letztes Match object (vor diesem nehmen)
+        # z.b. über datum
+        if scores1 is None and num_matches1 is None and scores2 is None and num_matches2 is None:
+            scores1, scores2 = [[clan.score for clan in clans1], [clan.score for clan in clans2]]
+            num_matches1, num_matches2 = [[clan.num_matches for clan in clans1], [clan.num_matches for clan in clans2]]
 
-    Args:
-        score1 (int): HeLO score of one team
-        score2 (int): HeLO score of the other team
+        if set(clans1) & set(clans2):
+            # a clan cannot play against itmatch
+            raise RuntimeError
 
-    Returns:
-        float, float: probability for better ranked team (score1)
-                      and worse ranked team (score2) between [0, 1]
-    """
-    assert score1 > 0 and score2 > 0
-    # difference of the HeLO scores, make sure not to exceed the maximum difference of 400
-    diff = min(400, abs(score1 - score2))
-    # round the probability to three decimal places
-    prob = round(0.5*(math.erf(diff/400) + 1), 3)
-    # prob is the winning probability for the better score, return probabilities accordingly
-    if score1 > score2:
-        return prob, round(1 - prob, 3)
-    else:
-        return round(1 - prob, 3), prob
+        # check if it is a coop game or a normal game
+        if len(match.clans1_ids) == 1 and len(match.clans2_ids) == 1:
+            score1, score2, err = get_new_scores(scores1[0], scores2[0],
+                                                        match.caps1, match.caps2,
+                                                        num_matches1[0],
+                                                        num_matches2[0],
+                                                        match.factor, match.players)
+            # for compatibility reasons
+            scores1, scores2 = [score1], [score2]
+        
+        else:
+            scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1,
+                                                            match.caps2, match.factor,
+                                                            match.player_dist1.items(),
+                                                            match.player_dist2.items(),
+                                                            match.players)
 
+        _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1, num_matches2, recalculate=recalculate)
+        match.score_posted = True
+        match.save()
 
-def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, number_of_players=50):
-    """Calculates the new HeLO score based on a given game score.
-
-    Args:
-        score1 (int): HeLO score of the first team
-        score2 (int): HeLO score of the second team
-        caps1 (str): strong points captured by the first team at the end of the match
-        caps2 (str): strong points captured by the second team at the end of the match
-        matches1 (int, optional): number of games played (team 1). Defaults to 0.
-        matches2 (int, optional): number of games played (team 2). Defaults to 0.
-        c (int, optional): competitive factor, possible values = {0.5, 0.8, 1, 1.2}. Defaults to 1.
-        number_of_players (int, optional): Number of players played in the game per team. Defaults to 50.
-
-    Returns:
-        int, int, str: new HeLO score for team 1 and team 2, possible error
-    """
-    try:
-        # determine the "amount factor" by the number of games played
-        a1 = 20 if matches1 is not None and matches1 > 30 else 40
-        a2 = 20 if matches2 is not None and matches2 > 30 else 40
-        # calculate the probabilities for the teams
-        prob1, prob2 = get_win_prob(score1, score2)
-        # check if points don't exceed maximum points, which are possible in HLL
-        assert caps1 + caps2 <= 5
-        # calulate the new HeLO scores
-        score1_new = score1 + a1 * float(c) * (math.log(number_of_players/50, a1) + 1) * float(caps1 / 5 - prob1)
-        score2_new = score2 + a2 * float(c) * (math.log(number_of_players/50, a2) + 1) * float(caps2 / 5 - prob2)
-        return round(score1_new), round(score2_new), None
-    except AssertionError:
-        return None, None, "Sum of points in score must be less or equal to 5"
+        return err
 
 
-def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
-                    player_dist1: list = None, player_dist2: list = None, num_players: int = 50):
-    """Calculates the scores for games with more than one clan on one (or both) side(s).
-    If a player distribution is given, the score will be calculated based on a weighted
-    average. Otherwise a normal average will be calculated.
+def _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1, num_matches2, recalculate=False):
+        for clan, score, num_matches in list(zip(clans1, scores1, num_matches1)) + list(zip(clans2, scores2, num_matches2)):
+            # get the score object which matches the match_id and the clan (id)
+            score_queryset = Score.objects(Q(match_id=match.match_id) & Q(clan=str(clan.id)))
+            # update or insert if it does not exist
+            res = score_queryset.update_one(set__score=score, upsert=True, full_result=True)
 
-    Args:
-        clan_scores1 (list): list of scores of the clans in the cooperation
-        clan_scores2 (list): list of scores of the clans in the cooperation on the other side
-        caps1 (int): strongpoints held by clans1 at the end of the game
-        caps2 (int): strongpoints held by clans2 at the end of the game
-        c (int, optional): competitive factor, possible values = {0.5, 0.8, 1, 1.2}. Defaults to 1.
-        player_dist1 (list, optional): player distributions of the participating clans1.
-                                        Defaults to None.
-        player_dist2 (list, optional): player distributions of the participating clans2.
-                                        Defaults to None.
-        num_players (list, optional): total number of players, only necessary if no player
-                                        distribution was given
+            # check if it was an insert or update, this is important for the number of matches
+            if res.raw_result.get("updatedExisting"):
+                clan.update(score=score)
 
-    Returns:
-        list, list, str: list of the new HeLO scores for every team (coop1, coop2), error message
-    """
-    # note: amount factor (a) will be ignored here, default is 40
-    # otherwise, these kind of games won't generate a significant score
-    # TODO: known issue: a coop game is also a game where only one clan plays against
-    # two or more clans, therefore the clan playing alone will be weighted with a = 40
-    # regardless of its number of games
-    a = 40
+            else:
+                clan.update(score=score, inc__num_matches=1)
 
-    # convert player distributions to numpy arrays and normalize
-    try:
-        # performs weighted average
-        weights1 = np.array(player_dist1) / sum(player_dist1)
-        weights2 = np.array(player_dist2) / sum(player_dist2)
-        num_players = sum(player_dist1)
-    except TypeError:
-        # performs normal average
-        weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
-        weights2 = np.ones(len(clan_scores2)) / len(clan_scores2)
+                if recalculate:
+                    # +1, because the num_matches is before the score has been calculated
+                    # we need to replace the matching score object's num_matches after the calculation
+                    num = num_matches + 1
+                    # update all scores after the match
+                    # TODO: make this all more efficient
+                    # all matches after the match that is new (including the match itmatch, because of 'gte' but ...)
+                    matches_after = Match.objects(Q(date__gte=match.date))
+                    # all scores after the match that is new
+                    scores_after = [Score.objects(Q(clan=str(clan.id)) & Q(match_id=match.match_id)) for match in matches_after]
+                    # update every match that comes after the new match
+                    for score in scores_after:
+                        score.update_one(inc__num_matches=1)
+                    # ... it does not matter, because we are setting the num_matches to the correct value here
+                    score_queryset.update_one(set__num_matches=num)
 
-    # calculate the (weighted) average score of the cooperations
-    avg1 = np.average(clan_scores1, weights=weights1)
-    avg2 = np.average(clan_scores2, weights=weights2)
-
-    score1, score2, err = get_new_scores(avg1, avg2, caps1, caps2,
-                                        c=c, number_of_players=num_players)
-    gain1, gain2 = score1 - avg1, score2 - avg2
-
-    print(gain1, gain2)
-
-    # share the gain depending on the player distribution
-    # if there is no player distribution, share equally
-    # cs = clan score, part = partial share according to the distribution
-    clan_scores1 = [round(cs + part * gain1) for cs, part in zip(clan_scores1, weights1)]
-    clan_scores2 = [round(cs + part * gain2) for cs, part in zip(clan_scores2, weights2)]
-
-    return clan_scores1, clan_scores2, err
+                else:
+                    clan.reload()
+                    # TODO: BUG, if there is no Score object and we recalculate, the num_matches is set
+                    # to the clan's num_matches, even if this isn't the true num_matches
+                    # edit: bug fixed for the moment with 'if recalculate'
+                    score_queryset.update_one(set__num_matches=clan.num_matches)
