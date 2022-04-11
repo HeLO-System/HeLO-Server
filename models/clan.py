@@ -8,8 +8,6 @@ from database.db import db
 class Clan(db.Document):
     # e.g. StDb for Stoßtrupp Donnerbalken
     tag = db.StringField(required=True, unique=True)
-    # tag in lowercase to make searching more efficient
-    _tag_lower = db.StringField(default=str(tag).lower(), unique=True)
     # full name
     name = db.StringField()
     # discord icon flag, e.g. :flag_eu:, :flag_de:, ...
@@ -33,3 +31,4 @@ class Clan(db.Document):
             }
         ]
     }
+

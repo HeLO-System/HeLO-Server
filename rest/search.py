@@ -3,44 +3,42 @@
 from flask_restful import Resource
 from flask import request
 
-from models.clan import Clan
-from models.match import Match
-from models.score import Score
-
-
-def get_model(t):
-    if t == "clan":
-        return Clan
-    elif t == "match":
-        return Match
-    elif t == "score":
-        return Score
+from logic._getter import get_model
+from ._common import get_response
 
 
 class SearchApi(Resource):
 
     def get(self):
-        # example: '/search?select=core&type=clan,match
-        # keyword to look for
-        select = request.args.get("select")
-        # list of types to search across
-        t = request.args.get("type")
+        try:
+            # example: '/search?select=core&type=match
+            # keyword to look for
+            select = request.args.get("select")
+            # type to search across, allowed values: 'clan', 'match', 'score'
+            t = request.args.get("type")
 
-        print(select, t)
+            print(select, t)
 
-        # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
-        # https://docs.mongoengine.org/guide/text-indexes.html
-        # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
-        docs = Match.objects.search_text(select)
-        for doc in docs:
-            print(doc.to_json())
+            if select is None:
+                raise RuntimeError
 
-        # cls, crit = get_model(t)
+            # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
+            # https://docs.mongoengine.org/guide/text-indexes.html
+            # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
+            cls = get_model(t)
+            docs = cls.objects.search_text(select)
 
-        # # docs = cls.objects.filter(_tag_lower=select)
-        # # print(docs)
+            return get_response(docs)
+        
+        except ValueError:
+            return {
+                "error": "mandatory query paramter 'type' got an illegal value",
+                "allowed_values": ["clan", "match", "score"],
+                "example": ".../search?select=core&type=match"
+            }, 422
 
-        # docs = cls.objects(crit__iexact=select)
-        # print(docs)
-
-        return '', 200
+        except RuntimeError:
+            return {
+                "error": "mandatory query paramter 'select' is 'None', please enter a keyword",
+                "example": ".../search?select=core&type=match"
+            }, 400

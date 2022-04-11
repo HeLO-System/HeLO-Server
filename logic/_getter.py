@@ -58,3 +58,25 @@ def get_by_num_matches(clan_id: str, num_matches: int):
         return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
     except DoesNotExist:
         return Score(clan_id, 0, "DefaultScore", 600)
+
+
+def get_model(t: str):
+    """Returns the database model for a specific type keyword.
+
+    Args:
+        t (str): type, allowed values: 'clan', 'match', 'score'
+
+    Raises:
+        ValueError: not allowed value used
+
+    Returns:
+        cls: model class from the database
+    """
+    if t == "clan":
+        return Clan
+    elif t == "match":
+        return Match
+    elif t == "score":
+        return Score
+    else:
+        raise ValueError
