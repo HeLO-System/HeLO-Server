@@ -1,12 +1,12 @@
 # rest/auth.py
 import datetime
-from flask import request
-from flask_jwt_extended.view_decorators import jwt_required
+from flask import request, Response
+from flask_jwt_extended import jwt_required, create_access_token
 from flask_restful import Resource
-from flask_jwt_extended import create_access_token
 from mongoengine.errors import NotUniqueError
-from database.models import User
-from ._common import *
+
+from models.user import User
+from ._common import get_response, handle_error, get_jwt, admin_required
 
 
 class SignupApi(Resource):

@@ -3,8 +3,8 @@ from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError
-from database.models import Event
-from ._common import *
+from models.event import Event
+from ._common import get_response, handle_error
 
 
 class EventApi(Resource):

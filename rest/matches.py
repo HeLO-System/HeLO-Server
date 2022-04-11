@@ -2,10 +2,13 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, DoesNotExist, OperationError
+from mongoengine.errors import DoesNotExist, OperationError
 from mongoengine.queryset.visitor import Q
-from database.models import Clan, Match, Score
-from ._common import *
+
+from models.match import Match
+from logic.calculations import calc_scores
+from logic.recalculations import start_recalculation
+from ._common import get_response, handle_error, get_jwt
 
 
 class MatchApi(Resource):
@@ -28,7 +31,7 @@ class MatchApi(Resource):
             match.reload()
             
             if not match.needs_confirmations() and not match.score_posted:
-                err = match.calc_scores()
+                err = calc_scores(match)
                 if err is not None: raise ValueError
                 print("match confirmed")
 
@@ -36,8 +39,7 @@ class MatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate and claims["is_admin"]:
-                #match.start_recalculation()
-                match.start_recalculation()
+                start_recalculation(match)
                 print("match and scores recalculated")
             
         except OperationError:
