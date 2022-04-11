@@ -17,9 +17,7 @@ class SearchApi(Resource):
             # type to search across, allowed values: 'clan', 'match', 'score'
             t = request.args.get("type")
 
-            print(select, t)
-
-            if select is None:
+            if select is None or select == "" or select == " ":
                 raise RuntimeError
 
             # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
@@ -39,6 +37,6 @@ class SearchApi(Resource):
 
         except RuntimeError:
             return {
-                "error": "mandatory query paramter 'select' is 'None', please enter a keyword",
+                "error": "mandatory query paramter 'select' is 'None' or empty, please enter a keyword",
                 "example": ".../search?select=core&type=match"
             }, 400
