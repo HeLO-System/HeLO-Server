@@ -218,7 +218,7 @@ class Match(db.Document):
         self.recalculate = False
         self.save()
 
-    def _get_score_and_num_matches(self, clan):
+    def _get_score_and_num_matches(self, clan: Clan):
         score_obj = Score.get_by_clan_id(self, str(clan.id))
         num = score_obj.num_matches
         # if there does not exist a score object, because the match was added afterwards,
@@ -298,6 +298,15 @@ class Score(db.Document):
 
     @staticmethod
     def get_by_clan_id(match: Match, clan_id: str):
+        """Returns a Score object that matches a specific match_id and clan_id.
+
+        Args:
+            match (Match): Match object
+            clan_id (str): id of a clan
+
+        Returns:
+            Score: Score matching the query
+        """
         try:
             return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
         # if the match haven't been confirmed, there won't be a matching Score object
@@ -322,6 +331,15 @@ class Score(db.Document):
 
     @staticmethod
     def get_by_num_matches(clan_id: str, num_matches: int):
+        """Returns a Score object that matches a specific clan_id and number of matches.
+
+        Args:
+            clan_id (str): id of a clan
+            num_matches (int): number of matches
+
+        Returns:
+            Score: Score matching the query
+        """
         try:
             return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
         except DoesNotExist:
