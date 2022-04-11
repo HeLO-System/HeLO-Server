@@ -75,7 +75,7 @@ class ClansApi(Resource):
         try:
             tag = request.args.get('tag')
 
-            if tag == None:
+            if tag is None:
                 return get_response(Clan.objects())
             else:
                 clans = Clan.objects(tag=tag)
@@ -96,7 +96,6 @@ class ClansApi(Resource):
             clan = Clan(**request.get_json())
             # todo - validate
             try:
-                clan.set_default_values()
                 clan = clan.save()
                 #return get_response({ "id": clan.id }) # weird error happening here, TODO: fix this
                 return f"id: {clan.id}", 200
