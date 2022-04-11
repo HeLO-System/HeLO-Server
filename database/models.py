@@ -151,31 +151,40 @@ class Match(db.Document):
             # check if it was an insert or update, this is important for the number of matches
             if res.raw_result.get("updatedExisting"):
                 clan.update(score=score)
+
             else:
                 clan.update(score=score, inc__num_matches=1)
+
                 if recalculate:
                     # +1, because the num_matches is before the score has been calculated
                     # we need to replace the matching score object's num_matches after the calculation
                     num = num_matches + 1
-                    old_score_queryset = Score.objects(Q(clan=str(clan.id)) & Q(num_matches=num))
-                    # order of these updates is important, I don't know why,
-                    # but it costed me a lot of time to figure it out
-                    old_score_queryset.update_one(inc__num_matches=1)
+                    # update all scores after the match
+                    # TODO: make this all more efficient
+                    # all matches after the match that is new (including the match itself, because of 'gte' but ...)
+                    matches_after = Match.objects(Q(date__gte=self.date))
+                    # all scores after the match that is new
+                    scores_after = [Score.objects(Q(clan=str(clan.id)) & Q(match_id=match.match_id)) for match in matches_after]
+                    # update every match that comes after the new match
+                    for score in scores_after:
+                        score.update_one(inc__num_matches=1)
+                    # ... it does not matter, because we are setting the num_matches to the correct value here
                     score_queryset.update_one(set__num_matches=num)
 
                 else:
                     clan.reload()
                     # TODO: BUG, if there is no Score object and we recalculate, the num_matches is set
                     # to the clan's num_matches, even if this isn't the true num_matches
-                    # edit: bug fixed for the moment
+                    # edit: bug fixed for the moment with 'if recalculate'
                     score_queryset.update_one(set__num_matches=clan.num_matches)
 
     def start_recalculation(self):
         clans1, clans2 = self.get_clan_objects()
         scores1, num_matches1 = zip(*[self._get_score_and_num_matches(clan) for clan in clans1])
         scores2, num_matches2 = zip(*[self._get_score_and_num_matches(clan) for clan in clans2])
+        print(self.match_id)
         # calculate new scores
-        err = self.calc_scores(scores1, num_matches1, scores2, num_matches2)
+        err = self.calc_scores(scores1, num_matches1, scores2, num_matches2, recalculate=True)
 
         # get all updated teams
         updated_teams = clans1 + clans2
@@ -205,7 +214,7 @@ class Match(db.Document):
             scores1, num_matches1 = zip(*[match._get_score_and_num_matches(clan) for clan in clans1])
             scores2, num_matches2 = zip(*[match._get_score_and_num_matches(clan) for clan in clans2])
             _ = match.calc_scores(scores1, num_matches1, scores2, num_matches2, recalculate=True)
-        
+
         self.recalculate = False
         self.save()
 
