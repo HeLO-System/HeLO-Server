@@ -8,7 +8,7 @@ from mongoengine.queryset.visitor import Q
 from models.match import Match
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
-from ._common import get_response, handle_error, get_jwt
+from ._common import get_response, handle_error, get_jwt, empty
 
 
 class MatchApi(Resource):
@@ -77,18 +77,15 @@ class MatchesApi(Resource):
             # die match_id zurück, nciht das ganze Objekt aus der DB
             select = request.args.get("select")
             match_id = request.args.get("match_id")
-            player_dist1 = request.args.get("dist1")
-            player_dist2 = request.args.get("dist2")
-            clans1_ids = request.args.get("ids1")
-            clans2_ids = request.args.get("ids2")
-            caps1 = request.args.get("caps1")
-            caps1 = request.args.get("caps2")
+            # comma separated list (or single entry)
+            clan_ids = request.args.get("clan_ids")
+            clan_ids = clan_ids.split(",")
+            caps = request.args.get("caps")
             map = request.args.get("map")
             duration_from = request.args.get("duration_from")
             duration_to = request.args.get("duration_to")
             factor = request.args.get("factor")
-            conf1 = request.args.get("conf1")
-            conf2 = request.args.get("conf2")
+            conf = request.args.get("conf")
             date = request.args.get("date")
             date_from = request.args.get("date_from")
             date_to = request.args.get("date_to")
@@ -98,17 +95,16 @@ class MatchesApi(Resource):
             filter = Q() # to perform advanced queries
             # see the doc: https://docs.mongoengine.org/guide/querying.html#advanced-queries
             # note, '&=' is the 'assign intersection operator'
-            if match_id != None: filter &= Q(match_id=match_id)
-            #if clans1_ids != None: filter &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
-            if clans1_ids != None: filter &= Q(clans1_ids=clans1_ids)
-            if clans2_ids != None: filter &= Q(clans2_ids=clans2_ids)
-            if player_dist1 != None: filter &= Q(clans1=player_dist1)
-            #if coop1_id != None: filter &= Q(coop1_id=coop1_id)
-            if player_dist2 != None: filter &= Q(clans2=player_dist2)
-            #if coop2_id != None: filter &= Q(coop2_id=coop2_id)
-            if conf1 != None: filter &= Q(conf1=conf1)
-            if conf2 != None: filter &= Q(conf2=conf2)
-            if date != None: filter &= Q(date=date)
+            if not empty(match_id): filter &= Q(match_id__icontains=match_id)
+            for id in clan_ids:
+                if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
+            if not empty(caps): filter &= (Q(caps1=caps) | Q(caps2=caps))
+            if not empty(map): filter &= Q(map__icontains=map)
+            if not empty(duration_from): filter &= Q(duration__gte=duration_from)
+            if not empty(duration_to): filter &= Q(duration__lte=duration_to)
+            if not empty(factor): filter &= Q(factor=factor)
+            if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
+            if not empty(date): filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
             if date_from != None: filter &= Q(date__gte=date_from)
             if date_to != None: filter &= Q(date__lte=date_to)
