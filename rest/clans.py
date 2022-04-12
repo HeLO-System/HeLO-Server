@@ -4,10 +4,10 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
-from mongoengine.queryset import Q
+from mongoengine.queryset.visitor import Q
 
 from models.clan import Clan
-from ._common import get_response, handle_error, admin_required
+from ._common import get_response, handle_error, admin_required, empty
 
 
 class ClanApi(Resource):
@@ -81,6 +81,10 @@ class ClansApi(Resource):
             name = request.args.get("name")
             # optional, number of matches
             num = request.args.get("num")
+            # optional, HeLO score 'gte' and 'lte'
+            score_from = request.args.get("score_from")
+            score_to = request.args.get("score_to")
+
             # optional, narrows the return to selected fields
             # should be a comma separated list
             select = request.args.get("select")
@@ -90,20 +94,22 @@ class ClansApi(Resource):
             # if all query parameters are empty/None
             # return all objects
             if not any(request.args.items()):
-                return get_response(Clan.objects).only(*fields)
+                return get_response(Clan.objects.only(*fields))
             else:
                 # filter through the documents by assigning the intersection (&=)
                 # for every query parameter one by one
                 filter = Q()
-                if tag is not None: filter &= Q(tag__iexact=tag)
-                if name is not None: filter &= Q(name__icontains=name)
-                if num is not None: filter &= Q(num_matches=num)
+                if not empty(tag): filter &= Q(tag__iexact=tag)
+                if not empty(name): filter &= Q(name__icontains=name)
+                if not empty(num): filter &= Q(num_matches=num)
+                if not empty(score_from): filter &= Q(score__gte=score_from)
+                if not empty(score_to): filter &= Q(score__lte=score_to)
 
                 clans = Clan.objects(filter).only(*fields)
                 return get_response(clans)
 
         except LookUpError:
-            return {"error": f"cannot resolve field 'select={select}'"}
+            return {"error": f"cannot resolve field 'select={select}'"}, 400
 
         except:
             return handle_error(f'error getting clans')
