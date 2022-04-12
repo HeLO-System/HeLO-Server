@@ -95,7 +95,7 @@ class ClansApi(Resource):
             # for every query parameter one by one
             filter = Q()
             
-            if not empty(tag): filter &= Q(tag__iexact=tag)
+            if not empty(tag): filter &= Q(tag__icontains=tag)
             if not empty(name): filter &= Q(name__icontains=name)
             if not empty(num): filter &= Q(num_matches=num)
             if not empty(score_from): filter &= Q(score__gte=score_from)
