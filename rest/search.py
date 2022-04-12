@@ -24,6 +24,7 @@ class SearchApi(Resource):
 
             # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
             # https://docs.mongoengine.org/guide/text-indexes.html
+            # https://stackoverflow.com/questions/1863399/mongodb-is-it-possible-to-make-a-case-insensitive-query
             # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
             cls = get_model(t)
             docs = cls.objects.search_text(select)[:limit]

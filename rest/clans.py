@@ -17,9 +17,9 @@ class ClanApi(Resource):
             clan = Clan.objects.get(id=oid)
             return get_response(clan)
         except ValidationError:
-            return "not a valid object id", 404
+            return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error getting clan from database,
                                 clan not found by oid: {oid}
@@ -36,14 +36,14 @@ class ClanApi(Resource):
                 clan.update(**request.get_json())
                 return '', 204
             except BadRequest:
-                return "Faulty Request", 400
+                return {"error": "Faulty Request"}, 400
             except Exception as e:
                 return handle_error(f"""error updating clan in database: {clan.tag}
                                     terminated with error: {e}""")
         except ValidationError:
-                return "not a valid object id", 404
+                return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error updating clan in database
                                 terminated with error: {e}""")
@@ -61,9 +61,9 @@ class ClanApi(Resource):
                 return handle_error(f"""error deleting clan in database: {clan.tag}
                                     terminated with error: {e}""")
         except ValidationError:
-                return "not a valid object id", 404
+                return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error deleting clan in database
                                 terminated with error: {e}""")
@@ -89,7 +89,6 @@ class ClansApi(Resource):
 
 
     # add new clan
-    #@jwt_required()
     # admin only
     @admin_required()
     def post(self):

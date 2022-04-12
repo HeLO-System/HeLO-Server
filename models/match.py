@@ -47,7 +47,7 @@ class Match(db.Document):
     meta = {
         "indexes": [
             {
-                "fields": ["$match_id", "$map"]
+                "fields": ["$match_id", "$map", "$event"]
             }
         ]
     }
