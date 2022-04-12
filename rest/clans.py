@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
+from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset import Q
 
@@ -75,19 +75,22 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
-            d = request.args.to_dict()
             # optional, clan tag
             tag = request.args.get("tag")
             # optional, full name
             name = request.args.get("name")
             # optional, number of matches
             num = request.args.get("num")
-            select = request.args.pop("select")
+            # optional, narrows the return to selected fields
+            # should be a comma separated list
+            select = request.args.get("select")
+
+            fields = select.split(",") if select is not None else []
             
             # if all query parameters are empty/None
             # return all objects
             if not any(request.args.items()):
-                return get_response(Clan.objects)
+                return get_response(Clan.objects).only(*fields)
             else:
                 # filter through the documents by assigning the intersection (&=)
                 # for every query parameter one by one
@@ -96,8 +99,11 @@ class ClansApi(Resource):
                 if name is not None: filter &= Q(name__icontains=name)
                 if num is not None: filter &= Q(num_matches=num)
 
-                clans = Clan.objects(filter)
+                clans = Clan.objects(filter).only(*fields)
                 return get_response(clans)
+
+        except LookUpError:
+            return {"error": f"cannot resolve field 'select={select}'"}
 
         except:
             return handle_error(f'error getting clans')
