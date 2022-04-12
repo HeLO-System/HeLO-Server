@@ -16,6 +16,8 @@ class SearchApi(Resource):
             select = request.args.get("select")
             # type to search across, allowed values: 'clan', 'match', 'score'
             t = request.args.get("type")
+            # optional, maximum number of results to return
+            limit = int(request.args.get("limit"))
 
             if select is None or select == "" or select == " ":
                 raise RuntimeError
@@ -24,15 +26,28 @@ class SearchApi(Resource):
             # https://docs.mongoengine.org/guide/text-indexes.html
             # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
             cls = get_model(t)
-            docs = cls.objects.search_text(select)
+            docs = cls.objects.search_text(select)[:limit]
 
             return get_response(docs)
         
         except ValueError:
             return {
-                "error": "mandatory query paramter 'type' got an illegal value",
-                "allowed_values": ["clan", "match", "score"],
-                "example": ".../search?select=core&type=match"
+                "error": "query paramter got an illegal value",
+                "query paramters": {
+                    "select": {
+                        "mandatory": True,
+                        "allowed_values": "any string"
+                    },
+                    "type": {
+                        "mandatory": True,
+                        "allowed_values": ["clan", "match", "score"]
+                    },
+                    "limit": {
+                        "mandatory": False,
+                        "allowed_value": "positive integers"
+                    }
+                },
+                "example": ".../search?select=core&type=match&limit=5"
             }, 422
 
         except RuntimeError:
