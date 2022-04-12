@@ -6,6 +6,7 @@ import traceback
 from flask import request, Response, jsonify
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
+from numpy import iterable
             
 
 # build response
@@ -25,7 +26,14 @@ def handle_error(text):
 
 
 # check for None or empty string
-def empty(s): return s == None or s == ""
+def empty(s: str):
+    if s is None:
+        return True
+    elif s == "":
+        return True
+    elif s == " ":
+        return True
+    return False
 
 
 # custom decorator varifying JWT is present in the request,

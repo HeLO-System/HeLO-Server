@@ -4,22 +4,24 @@ from flask_restful import Resource
 from flask import request
 
 from logic._getter import get_model
-from ._common import get_response
+from ._common import get_response, empty
 
 
 class SearchApi(Resource):
 
     def get(self):
         try:
-            # example: '/search?select=core&type=match
-            # keyword to look for
-            select = request.args.get("select")
+            # example: '/search?q=core&type=match
+            # query string, keyword to look for
+            q = request.args.get("q")
             # type to search across, allowed values: 'clan', 'match', 'score'
             t = request.args.get("type")
             # optional, maximum number of results to return
-            limit = int(request.args.get("limit"))
+            limit = request.args.get("limit")
+            if not empty(limit):
+                limit = int(limit)
 
-            if select is None or select == "" or select == " ":
+            if empty(q):
                 raise RuntimeError
 
             # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
@@ -27,7 +29,7 @@ class SearchApi(Resource):
             # https://stackoverflow.com/questions/1863399/mongodb-is-it-possible-to-make-a-case-insensitive-query
             # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
             cls = get_model(t)
-            docs = cls.objects.search_text(select)[:limit]
+            docs = cls.objects.search_text(q)[:limit]
 
             return get_response(docs)
         

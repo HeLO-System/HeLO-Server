@@ -4,6 +4,7 @@ from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 from werkzeug.exceptions import BadRequest
+from mongoengine.queryset import Q
 
 from models.clan import Clan
 from ._common import get_response, handle_error, admin_required
@@ -74,16 +75,30 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
-            tag = request.args.get('tag')
-
-            if tag is None:
-                return get_response(Clan.objects())
+            d = request.args.to_dict()
+            # optional, clan tag
+            tag = request.args.get("tag")
+            # optional, full name
+            name = request.args.get("name")
+            # optional, number of matches
+            num = request.args.get("num")
+            select = request.args.pop("select")
+            
+            # if all query parameters are empty/None
+            # return all objects
+            if not any(request.args.items()):
+                return get_response(Clan.objects)
             else:
-                clans = Clan.objects(tag=tag)
-                if len(clans) != 1:
-                    return handle_error(f'no clan found for: {tag}')
-                else:
-                    return get_response(clans[0])
+                # filter through the documents by assigning the intersection (&=)
+                # for every query parameter one by one
+                filter = Q()
+                if tag is not None: filter &= Q(tag__iexact=tag)
+                if name is not None: filter &= Q(name__icontains=name)
+                if num is not None: filter &= Q(num_matches=num)
+
+                clans = Clan.objects(filter)
+                return get_response(clans)
+
         except:
             return handle_error(f'error getting clans')
 
