@@ -75,39 +75,41 @@ class MatchesApi(Resource):
         try:
             # select grenzt angefragte Felder ein, z.B. select=match_id kommt nur
             # die match_id zurück, nciht das ganze Objekt aus der DB
-            select = request.args.get('select')
-            match_id = request.args.get('match_id')
-            player_dist1 = request.args.get('dist1')
-            player_dist2 = request.args.get('dist2')
-            clans1_ids = request.args.get('ids1')
-            clans2_ids = request.args.get('ids2')
-            conf1 = request.args.get('conf1')
-            conf2 = request.args.get('conf2')
-            date = request.args.get('date')
-            date_from = request.args.get('date_from')
-            date_to = request.args.get('date_to')
+            select = request.args.get("select")
+            match_id = request.args.get("match_id")
+            player_dist1 = request.args.get("dist1")
+            player_dist2 = request.args.get("dist2")
+            clans1_ids = request.args.get("ids1")
+            clans2_ids = request.args.get("ids2")
+            caps1 = request.args.get("caps1")
+            caps1 = request.args.get("caps2")
+            conf1 = request.args.get("conf1")
+            conf2 = request.args.get("conf2")
+            date = request.args.get("date")
+            date_from = request.args.get("date_from")
+            date_to = request.args.get("date_to")
 
-            fields = select.split(',') if select != None else []
+            fields = select.split(',') if select is not None else []
                 
-            where = Q() # to perform advanced queries
+            filter = Q() # to perform advanced queries
             # see the doc: https://docs.mongoengine.org/guide/querying.html#advanced-queries
             # note, '&=' is the 'assign intersection operator'
-            if match_id != None: where &= Q(match_id=match_id)
-            #if clans1_ids != None: where &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
-            if clans1_ids != None: where &= Q(clans1_ids=clans1_ids)
-            if clans2_ids != None: where &= Q(clans2_ids=clans2_ids)
-            if player_dist1 != None: where &= Q(clans1=player_dist1)
-            #if coop1_id != None: where &= Q(coop1_id=coop1_id)
-            if player_dist2 != None: where &= Q(clans2=player_dist2)
-            #if coop2_id != None: where &= Q(coop2_id=coop2_id)
-            if conf1 != None: where &= Q(conf1=conf1)
-            if conf2 != None: where &= Q(conf2=conf2)
-            if date != None: where &= Q(date=date)
+            if match_id != None: filter &= Q(match_id=match_id)
+            #if clans1_ids != None: filter &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
+            if clans1_ids != None: filter &= Q(clans1_ids=clans1_ids)
+            if clans2_ids != None: filter &= Q(clans2_ids=clans2_ids)
+            if player_dist1 != None: filter &= Q(clans1=player_dist1)
+            #if coop1_id != None: filter &= Q(coop1_id=coop1_id)
+            if player_dist2 != None: filter &= Q(clans2=player_dist2)
+            #if coop2_id != None: filter &= Q(coop2_id=coop2_id)
+            if conf1 != None: filter &= Q(conf1=conf1)
+            if conf2 != None: filter &= Q(conf2=conf2)
+            if date != None: filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
-            if date_from != None: where &= Q(date__gte=date_from)
-            if date_to != None: where &= Q(date__lte=date_to)
+            if date_from != None: filter &= Q(date__gte=date_from)
+            if date_to != None: filter &= Q(date__lte=date_to)
 
-            matches = Match.objects(where).only(*fields)
+            matches = Match.objects(filter).only(*fields)
                         
             return get_response(matches)
         

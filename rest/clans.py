@@ -90,23 +90,19 @@ class ClansApi(Resource):
             select = request.args.get("select")
 
             fields = select.split(",") if select is not None else []
-            
-            # if all query parameters are empty/None
-            # return all objects
-            if not any(request.args.items()):
-                return get_response(Clan.objects.only(*fields))
-            else:
-                # filter through the documents by assigning the intersection (&=)
-                # for every query parameter one by one
-                filter = Q()
-                if not empty(tag): filter &= Q(tag__iexact=tag)
-                if not empty(name): filter &= Q(name__icontains=name)
-                if not empty(num): filter &= Q(num_matches=num)
-                if not empty(score_from): filter &= Q(score__gte=score_from)
-                if not empty(score_to): filter &= Q(score__lte=score_to)
 
-                clans = Clan.objects(filter).only(*fields)
-                return get_response(clans)
+            # filter through the documents by assigning the intersection (&=)
+            # for every query parameter one by one
+            filter = Q()
+            
+            if not empty(tag): filter &= Q(tag__iexact=tag)
+            if not empty(name): filter &= Q(name__icontains=name)
+            if not empty(num): filter &= Q(num_matches=num)
+            if not empty(score_from): filter &= Q(score__gte=score_from)
+            if not empty(score_to): filter &= Q(score__lte=score_to)
+
+            clans = Clan.objects(filter).only(*fields)
+            return get_response(clans)
 
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
