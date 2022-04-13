@@ -2,7 +2,9 @@
 first level class
 """
 
-from database.db import db
+import json
+
+from database.db import db, CustomQuerySet
 
 
 class Clan(db.Document):
@@ -22,3 +24,18 @@ class Clan(db.Document):
     conf = db.StringField()
     # alternative tags, if a clan was renamed, reserved
     alt_tags = db.ListField()
+    # link to the icon of a clan
+    icon = db.StringField(default="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1")
+    meta = {
+        "indexes": [
+            {
+                "fields": ["$tag", "$name"]
+            }
+        ],
+        "queryset_class": CustomQuerySet
+    }
+
+
+    def to_dict(self):
+        return json.loads(self.to_json())
+

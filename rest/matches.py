@@ -2,13 +2,14 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import DoesNotExist, OperationError
+from mongoengine.errors import DoesNotExist, OperationError, LookUpError
 from mongoengine.queryset.visitor import Q
+from datetime import datetime
 
 from models.match import Match
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
-from ._common import get_response, handle_error, get_jwt
+from ._common import get_response, handle_error, get_jwt, empty
 
 
 class MatchApi(Resource):
@@ -75,104 +76,69 @@ class MatchesApi(Resource):
         try:
             # select grenzt angefragte Felder ein, z.B. select=match_id kommt nur
             # die match_id zurück, nciht das ganze Objekt aus der DB
-            select = request.args.get('select')
-            match_id = request.args.get('match_id')
-            player_dist1 = request.args.get('player_dist1')
-            player_dist2 = request.args.get('player_dist2')
-            clans1_ids = request.args.get('clans1_ids')
-            clans2_ids = request.args.get('clans2_ids')
-            # coop1_id = request.args.get('coop1_id')
-            # clan2_id = request.args.get('clan2_id')
-            # coop2_id = request.args.get('coop2_id')
-            conf1 = request.args.get('conf1')
-            conf2 = request.args.get('conf2')
-            date = request.args.get('date')
-            date_from = request.args.get('date_from')
-            date_to = request.args.get('date_to')
+            select = request.args.get("select")
+            match_id = request.args.get("match_id")
+            # comma separated list (or single entry)
+            # e.g. clan_ids=123,456
+            clan_ids = request.args.get("clan_ids")
+            clan_ids = clan_ids.split(",") if clan_ids is not None else []
+            caps = request.args.get("caps")
+            caps_from = request.args.get("caps_from")
+            map = request.args.get("map")
+            duration_from = request.args.get("duration_from")
+            duration_to = request.args.get("duration_to")
+            factor = request.args.get("factor")
+            conf = request.args.get("conf")
+            event = request.args.get("event")
 
-            fields = select.split(',') if select != None else []
-                
-            where = Q() # to perform advanced queries
-            # see the doc: https://docs.mongoengine.org/guide/querying.html#advanced-queries
-            # note, '&=' is the 'assign intersection operator'
-            if match_id != None: where &= Q(match_id=match_id)
-            #if clans1_ids != None: where &= (Q(clans1_ids=clans1_ids) | Q(clan2_id=clan_id))
-            if clans1_ids != None: where &= Q(clans1_ids=clans1_ids)
-            if clans2_ids != None: where &= Q(clans2_ids=clans2_ids)
-            if player_dist1 != None: where &= Q(clans1=player_dist1)
-            #if coop1_id != None: where &= Q(coop1_id=coop1_id)
-            if player_dist2 != None: where &= Q(clans2=player_dist2)
-            #if coop2_id != None: where &= Q(coop2_id=coop2_id)
-            if conf1 != None: where &= Q(conf1=conf1)
-            if conf2 != None: where &= Q(conf2=conf2)
-            if date != None: where &= Q(date=date)
+            # take the query string and split it by '-'
+            # typecast the strings into integers and deliver them as year, month, day to
+            # the datetime constructor
+            date = datetime(*[int(d) for d in request.args.get("date").split("-")])
+            date_from = datetime(*[int(d) for d in request.args.get("date_from").split("-")])
+            date_to = datetime(*[int(d) for d in request.args.get("date_to").split("-")])
+
+            fields = select.split(',') if select is not None else []
+
+            # filter through the documents by assigning the intersection (&=)
+            # for every query parameter one by one  
+            filter = Q()
+
+            if not empty(match_id): filter &= Q(match_id__icontains=match_id)
+            for id in clan_ids:
+                if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
+            if not empty(caps): filter &= (Q(caps1=caps) | Q(caps2=caps))
+            if not empty(caps_from): filter &= (Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from))
+            if not empty(map): filter &= Q(map__icontains=map)
+            if not empty(duration_from): filter &= Q(duration__gte=duration_from)
+            if not empty(duration_to): filter &= Q(duration__lte=duration_to)
+            if not empty(factor): filter &= Q(factor=factor)
+            if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
+            if not empty(event): filter &= Q(event__icontains=event)
+
+            if not empty(date): filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
-            if date_from != None: where &= Q(date__gte=date_from)
-            if date_to != None: where &= Q(date__lte=date_to)
+            # edit: done
+            if not empty(date_from): filter &= Q(date__gte=date_from)
+            if not empty(date_to): filter &= Q(date__lte=date_to)
 
-            matches = Match.objects(where).only(*fields)
+            # significantly faster than len(), because it's server-sided
+            total = Match.objects(filter).only(*fields).count()
+            matches = Match.objects(filter).only(*fields)
+
+            res = {
+                "total": total,
+                "items": matches.to_json_serializable()
+            }
                         
-            return get_response(matches)
+            return get_response(res)
         
+        except LookUpError:
+            return {"error": f"cannot resolve field 'select={select}'"}, 400
+
         except:
             return handle_error(f'error getting matches')
 
-
-    # add new match
-    # @jwt_required()
-    # def post(self):
-    #     try:
-    #         match = Match(**request.get_json())
-    #         try:
-    #             # if the match is confirmed and the score has not been posted before, calculate the new scores
-    #             if not match.score_posted and not empty(match.conf1) and not empty(match.conf2):
-    #                 # mongoengine does not support transactions!!! :(
-                    
-    #                 # get clans/coop partners by id or by tag
-    #                 clan1 = Clan.objects(id=match.clan1_id).first() if match.clan1_id != None else Clan.objects(tag=match.clan1).first()
-                    
-    #                 if match.coop1_id != None:
-    #                     coop1 = Clan.objects(id=match.coop1_id).first() if match.coop1_id != None else Clan.objects(tag=match.coop1).first()
-                        
-    #                 clan2 = Clan.objects(id=match.clan2_id).first() if match.clan2_id != None else Clan.objects(tag=match.clan2).first()
-                    
-    #                 if match.coop2_id != None:
-    #                     coop2 = Clan.objects(id=match.coop2_id).first() if match.coop2_id != None else Clan.objects(tag=match.coop2).first()
-                    
-    #                 clan1.init()
-    #                 clan2.init()
-                    
-    #                 # get initial score for clans/coop partners
-    #                 score_clan1 = Scores.new_from_match(match, clan1)
-    #                 score_clan2 = Scores.new_from_match(match, clan2)                    
-    #                 # calculate new values
-    #                 clan1.matches += 1
-    #                 clan2.matches += 1
-    #                 clan1.score, clan2.score, error = get_new_scores(score1=clan1.score, score2=clan2.score, caps1=match.caps1, caps2=match.caps2, matches1=clan1.matches, matches2=clan2.matches, c=match.factor, number_of_players=match.players)
-    #                 # update initial scores with new values
-    #                 score_clan1.score = clan1.score
-    #                 score_clan1.count = clan1.matches
-    #                 score_clan2.score = clan2.score
-    #                 score_clan2.count = clan2.matches
-    #                 if error != None:
-    #                     logging.error(f"error calculating scores: {error}")
-    #                 else:
-    #                     # save data to db
-    #                     clan1.save()
-    #                     clan2.save()
-    #                     score_clan1.save()
-    #                     score_clan2.save()
-    #                     match.score_posted = True
-                
-    #             # save match data           
-    #             match = match.save()
-    #             return get_response({ "match_id": match.match_id })
-    #         except NotUniqueError:
-    #             return handle_error(f"match already exists in database: {match.match_id}")
-    #         except:
-    #             return handle_error(f"error creating match in database: {match.match_id}")
-    #     except:
-    #         return handle_error(f'error creating match in database')
 
     # add new match
     @jwt_required()
@@ -186,4 +152,4 @@ class MatchesApi(Resource):
         except:
             return handle_error(f'error creating match in database')
         else:
-            return get_response({ "match_id": match.match_id, "confirmed": not need_conf })
+            return get_response({"match_id": match.match_id, "confirmed": not need_conf})

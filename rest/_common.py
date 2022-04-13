@@ -25,7 +25,14 @@ def handle_error(text):
 
 
 # check for None or empty string
-def empty(s): return s == None or s == ""
+def empty(s: str):
+    if s is None:
+        return True
+    elif s == "":
+        return True
+    elif s == " ":
+        return True
+    return False
 
 
 # custom decorator varifying JWT is present in the request,

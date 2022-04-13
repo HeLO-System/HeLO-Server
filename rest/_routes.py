@@ -1,5 +1,6 @@
 # rest/routes.py
 from rest.events import EventApi, EventsApi
+from rest.search import SearchApi
 from rest.simulations import SimulationsApi
 from rest.users import SignupApi, LoginApi, UserApi, UsersApi
 from rest.clans import ClansApi, ClanApi
@@ -21,3 +22,4 @@ def initialize_routes(api):
     api.add_resource(ScoresApi, '/scores')
     api.add_resource(ScoreApi, '/score/<oid>')
     api.add_resource(SimulationsApi, '/simulations')
+    api.add_resource(SearchApi, '/search')

@@ -6,7 +6,9 @@ for one clan is the sum of all matches of the clan.
 One match results automatically in at least two Score Objects.
 """
 
-from database.db import db
+import json
+
+from database.db import db, CustomQuerySet
 
 
 class Score(db.Document):
@@ -22,6 +24,9 @@ class Score(db.Document):
     # double checking whether the score in the corresponding clan object is the same
     # IMPORTANT: clan.score must be updated first!
     # score_before = db.IntField(required=True)
+    meta = {
+            "queryset_class": CustomQuerySet
+        }
 
     def __init__(self, clan: str, num_matches: int, match_id: str, score: int, *args, **kwargs):
         super().__init__()
@@ -43,3 +48,7 @@ class Score(db.Document):
         """
         # clan.id is the oid of the Clan object in the DB
         return cls(str(clan.id), clan.num_matches, match.match_id, clan.score)
+
+
+    def to_dict(self):
+        return json.loads(self.to_json())

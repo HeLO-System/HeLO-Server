@@ -2,7 +2,9 @@
 first level class
 """
 
-from database.db import db
+import json
+
+from database.db import db, CustomQuerySet
 
 
 class Match(db.Document):
@@ -44,6 +46,15 @@ class Match(db.Document):
     # reserved for admins, necessary to start a recalculate process for this match
     # will be set only temporarily
     recalculate = db.BooleanField()
+    meta = {
+        "indexes": [
+            {
+                "fields": ["$match_id", "$map", "$event"]
+            }
+        ],
+        "queryset_class": CustomQuerySet
+    }
+
 
     def needs_confirmations(self):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
@@ -51,3 +62,7 @@ class Match(db.Document):
             return False
         else:
             return True
+
+
+    def to_dict(self):
+        return json.loads(self.to_json())

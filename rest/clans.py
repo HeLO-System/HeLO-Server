@@ -2,11 +2,12 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
+from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
+from mongoengine.queryset.visitor import Q
 
 from models.clan import Clan
-from ._common import get_response, handle_error, admin_required
+from ._common import get_response, handle_error, admin_required, empty
 
 
 class ClanApi(Resource):
@@ -17,9 +18,9 @@ class ClanApi(Resource):
             clan = Clan.objects.get(id=oid)
             return get_response(clan)
         except ValidationError:
-            return "not a valid object id", 404
+            return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error getting clan from database,
                                 clan not found by oid: {oid}
@@ -36,14 +37,14 @@ class ClanApi(Resource):
                 clan.update(**request.get_json())
                 return '', 204
             except BadRequest:
-                return "Faulty Request", 400
+                return {"error": "Faulty Request"}, 400
             except Exception as e:
                 return handle_error(f"""error updating clan in database: {clan.tag}
                                     terminated with error: {e}""")
         except ValidationError:
-                return "not a valid object id", 404
+                return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error updating clan in database
                                 terminated with error: {e}""")
@@ -61,9 +62,9 @@ class ClanApi(Resource):
                 return handle_error(f"""error deleting clan in database: {clan.tag}
                                     terminated with error: {e}""")
         except ValidationError:
-                return "not a valid object id", 404
+                return {"error": "not a valid object id"}, 404
         except DoesNotExist:
-                return "object does not exist", 404
+                return {"error": "object does not exist"}, 404
         except Exception as e:
             return handle_error(f"""error deleting clan in database
                                 terminated with error: {e}""")
@@ -74,22 +75,51 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
-            tag = request.args.get('tag')
+            # optional, clan tag
+            tag = request.args.get("tag")
+            # optional, full name
+            name = request.args.get("name")
+            # optional, number of matches
+            num = request.args.get("num")
+            # optional, HeLO score 'gte' and 'lte'
+            score_from = request.args.get("score_from")
+            score_to = request.args.get("score_to")
 
-            if tag is None:
-                return get_response(Clan.objects())
-            else:
-                clans = Clan.objects(tag=tag)
-                if len(clans) != 1:
-                    return handle_error(f'no clan found for: {tag}')
-                else:
-                    return get_response(clans[0])
+            # optional, narrows the return to selected fields
+            # should be a comma separated list
+            select = request.args.get("select")
+
+            fields = select.split(",") if select is not None else []
+
+            # filter through the documents by assigning the intersection (&=)
+            # for every query parameter one by one
+            filter = Q()
+            
+            if not empty(tag): filter &= Q(tag__icontains=tag)
+            if not empty(name): filter &= Q(name__icontains=name)
+            if not empty(num): filter &= Q(num_matches=num)
+            if not empty(score_from): filter &= Q(score__gte=score_from)
+            if not empty(score_to): filter &= Q(score__lte=score_to)
+            
+            # significantly faster than len(), because it's server-sided
+            total = Clan.objects(filter).only(*fields).count()
+            clans = Clan.objects(filter).only(*fields)
+
+            res = {
+                "total": total,
+                "items": clans.to_json_serializable()
+            }
+
+            return get_response(res)
+
+        except LookUpError:
+            return {"error": f"cannot resolve field 'select={select}'"}, 400
+
         except:
             return handle_error(f'error getting clans')
 
 
     # add new clan
-    #@jwt_required()
     # admin only
     @admin_required()
     def post(self):
