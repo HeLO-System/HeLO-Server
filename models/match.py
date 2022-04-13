@@ -60,8 +60,7 @@ class Match(db.Document):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
             # do the calcs then
             return False
-        else:
-            return True
+        return True
 
 
     def to_dict(self):

@@ -3,10 +3,11 @@ import datetime
 from flask import request, Response
 from flask_jwt_extended import jwt_required, create_access_token
 from flask_restful import Resource
+from mongoengine.queryset.visitor import Q
 from mongoengine.errors import NotUniqueError
 
 from models.user import User
-from ._common import get_response, handle_error, get_jwt, admin_required
+from ._common import get_response, handle_error, get_jwt, admin_required, empty
 
 
 class SignupApi(Resource):
@@ -16,9 +17,11 @@ class SignupApi(Resource):
             j = request.get_json()
             user = User(**j)
             user.hash_password()
-            # TODO: role auf default value setzen
+            if user.role == "admin":
+                # admins do not demand :P
+                user.role = None
             user.save()
-            return get_response({ 'id': user.userid })
+            return get_response({'id': user.userid})
         except:
             return handle_error("Error signing up")
     
@@ -77,7 +80,7 @@ class UserApi(Resource):
                     claims = get_jwt()
                     # TODO: muss in die doku rein
                     if not claims["is_admin"]:
-                        return "non-admins are not allowed to change their role", 401
+                        return {"error": "non-admins are not allowed to change their role"}, 401
                 user.update(**request.get_json())
                 return '', 204
             except:
@@ -104,38 +107,22 @@ class UsersApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:        
-            name = request.args.get('name')
-            name_like = request.args.get('name_like')
+            name = request.args.get("name")
+            clan = request.args.get("clan_id")
+
+            filter = Q()
+            if not empty(name): filter &= Q(name__icontains=name)
+            if not empty(clan): filter &= Q(clan=clan)
+
+            total = User.objects(filter).exclude("pin").count()
+            users = User.objects(filter).exclude("pin")
+
+            res = {
+                "total": total,
+                "items": users.to_json_serializable()
+            }
             
-            if name == None:
-                if name_like == None:
-                    return get_response(User.objects())
-                else:
-                    users = User.objects(name__icontains=name_like)
-            else:
-                users = User.objects(name=name)
-            if len(users) == 0:
-                return handle_error(f'no user found for: {name}')
-            else:
-                return get_response(users)
+            return get_response(res)
+
         except:
             return handle_error(f"Error getting user data")
-
-
-
-    # add new user
-    # TODO: evtl. weg
-    @jwt_required()
-    def post(self):
-        try:
-            user = User(**request.get_json())
-            try:
-                user = user.save()
-                return get_response({ "id": user.id })
-            except NotUniqueError:
-                return handle_error(f"user already exists in database: {user.userid}")
-            except:
-                return handle_error(f"error creating user in database: {user.userid}")
-        except:
-            return handle_error(f'error creating users in database')
-
