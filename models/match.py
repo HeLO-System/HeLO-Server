@@ -13,11 +13,9 @@ class Match(db.Document):
     # unique identifiers (very long number) of the clan -> oid of the clan object in DB
     clans1_ids = db.ListField()
     clans2_ids = db.ListField()
-    # clan tag mapped to the number of players they fielded
-    # e.g. {"CoRe": 30, "StDb": 20}
     # player distribution is not required, and should be None if not provided
-    player_dist1 = db.DictField()
-    player_dist2 = db.DictField()
+    player_dist1 = db.ListField()
+    player_dist2 = db.ListField()
     # allies or axis
     side1        = db.StringField()
     side2        = db.StringField()
