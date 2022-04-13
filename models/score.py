@@ -31,6 +31,9 @@ class Score(db.Document):
         self.num_matches = num_matches
         self.match_id = match_id
         self.score = score
+        meta = {
+            "queryset_class": CustomQuerySet
+        }
 
     @classmethod
     def from_match(cls, match, clan):
@@ -45,3 +48,7 @@ class Score(db.Document):
         """
         # clan.id is the oid of the Clan object in the DB
         return cls(str(clan.id), clan.num_matches, match.match_id, clan.score)
+
+
+    def to_dict(self):
+        return json.loads(self.to_json())
