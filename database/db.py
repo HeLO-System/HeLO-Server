@@ -11,4 +11,6 @@ def initialize_db(app):
 class CustomQuerySet(QuerySet):
 
     def to_json_serializable(self):
-        return [doc.to_dict() for doc in self]
+        # check if a document in the QuerySet has the method "to_dict"
+        # if not return the default document
+        return [doc.to_dict() if hasattr(doc, "to_dict") else doc for doc in self]

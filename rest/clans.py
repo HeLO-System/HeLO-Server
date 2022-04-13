@@ -100,9 +100,17 @@ class ClansApi(Resource):
             if not empty(num): filter &= Q(num_matches=num)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
-
+            
+            # significantly faster than len(), because it's server-sided
+            total = Clan.objects(filter).only(*fields).count()
             clans = Clan.objects(filter).only(*fields)
-            return get_response(clans)
+
+            res = {
+                "total": total,
+                "items": clans.to_json_serializable()
+            }
+
+            return get_response(res)
 
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
