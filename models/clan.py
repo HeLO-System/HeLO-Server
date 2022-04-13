@@ -3,6 +3,7 @@ first level class
 """
 
 import json
+from datetime import datetime
 
 from database.db import db, CustomQuerySet
 
@@ -26,6 +27,8 @@ class Clan(db.Document):
     alt_tags = db.ListField()
     # link to the icon of a clan
     icon = db.StringField(default="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1")
+    # when the clan was last updated (e.g. the score)
+    last_updated = db.DateTimeField(default=datetime.now())
     meta = {
         "indexes": [
             {

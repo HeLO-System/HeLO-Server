@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
+from datetime import datetime
 
 from models.clan import Clan
 from ._common import get_response, handle_error, admin_required, empty
@@ -34,8 +35,9 @@ class ClanApi(Resource):
             clan = Clan.objects.get(id=oid)
             # todo - validate TODO: was ist mit validate gemeint?
             try:
-                clan.update(**request.get_json())
+                clan.update(last_updated=datetime.now(), **request.get_json())
                 return '', 204
+
             except BadRequest:
                 return {"error": "Faulty Request"}, 400
             except Exception as e:
@@ -46,8 +48,7 @@ class ClanApi(Resource):
         except DoesNotExist:
                 return {"error": "object does not exist"}, 404
         except Exception as e:
-            return handle_error(f"""error updating clan in database
-                                terminated with error: {e}""")
+            return handle_error(f"error updating clan in database - terminated with error: {e}")
 
     # update clan by object id
     # admin only
@@ -128,8 +129,8 @@ class ClansApi(Resource):
             # todo - validate
             try:
                 clan = clan.save()
-                #return get_response({ "id": clan.id }) # weird error happening here, TODO: fix this
-                return f"id: {clan.id}", 200
+                return get_response({"id": str(clan.id)})
+
             except NotUniqueError:
                 return handle_error(f"clan already exists in database: {clan.tag}")
             except ValidationError as e:

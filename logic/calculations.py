@@ -3,6 +3,7 @@ Score Calculation and Database Interactions
 """
 
 from mongoengine.queryset.visitor import Q
+from datetime import datetime
 
 from logic.helo_functions import get_new_scores, get_coop_scores
 from models.match import Match
@@ -55,10 +56,10 @@ def _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1
 
             # check if it was an insert or update, this is important for the number of matches
             if res.raw_result.get("updatedExisting"):
-                clan.update(score=score)
+                clan.update(score=score, last_updated=datetime.now())
 
             else:
-                clan.update(score=score, inc__num_matches=1)
+                clan.update(score=score, last_updated=datetime.now(), inc__num_matches=1)
 
                 if recalculate:
                     # +1, because the num_matches is before the score has been calculated
