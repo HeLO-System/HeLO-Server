@@ -10,7 +10,7 @@ from database.db import db, CustomQuerySet
 
 class Clan(db.Document):
     # e.g. StDb for Stoßtrupp Donnerbalken
-    tag = db.StringField(required=True, unique=True)
+    tag = db.StringField(required=True, unique=True, max_length=10)
     # full name
     name = db.StringField()
     # discord icon flag, e.g. :flag_eu:, :flag_de:, ...
