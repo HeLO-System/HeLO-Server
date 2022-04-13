@@ -24,6 +24,9 @@ class Score(db.Document):
     # double checking whether the score in the corresponding clan object is the same
     # IMPORTANT: clan.score must be updated first!
     # score_before = db.IntField(required=True)
+    meta = {
+            "queryset_class": CustomQuerySet
+        }
 
     def __init__(self, clan: str, num_matches: int, match_id: str, score: int, *args, **kwargs):
         super().__init__()
@@ -31,9 +34,6 @@ class Score(db.Document):
         self.num_matches = num_matches
         self.match_id = match_id
         self.score = score
-        meta = {
-            "queryset_class": CustomQuerySet
-        }
 
     @classmethod
     def from_match(cls, match, clan):

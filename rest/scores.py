@@ -1,7 +1,6 @@
 # rest/scores.py
 from flask import request
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required
 from mongoengine import Q
 from mongoengine.errors import LookUpError
 
@@ -58,6 +57,9 @@ class ScoresApi(Resource):
             select = request.args.get("select")
             clan = request.args.get("clan_id")
             match_id = request.args.get("match_id")
+            num = request.args.get("num")
+            num_from = request.args.get("num_from")
+            num_to = request.args.get("num_to")
             score = request.args.get("score")
             score_from = request.args.get("score_from")
             score_to = request.args.get("score_to")
@@ -68,6 +70,9 @@ class ScoresApi(Resource):
 
             if not empty(clan): filter &= Q(clan=clan)
             if not empty(match_id): filter &= Q(match_id__icontains=match_id)
+            if not empty(num): filter &= Q(num_matches=num)
+            if not empty(num_from): filter &= Q(num_matches__gte=num_from)
+            if not empty(num_to): filter &= Q(num_matches__lte=num_from)
             if not empty(score): filter &= Q(score=score)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
@@ -84,7 +89,6 @@ class ScoresApi(Resource):
 
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
-
 
         except:
             return handle_error("Error getting scores from database")
