@@ -1,1 +1,1 @@
-web: gunicorn mongorest:app
+web: gunicorn helo-server:app
