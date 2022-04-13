@@ -2,7 +2,9 @@
 first level class
 """
 
-from database.db import db
+import json
+
+from database.db import db, CustomQuerySet
 
 
 class Clan(db.Document):
@@ -29,6 +31,11 @@ class Clan(db.Document):
             {
                 "fields": ["$tag", "$name"]
             }
-        ]
+        ],
+        "queryset_class": CustomQuerySet
     }
+
+
+    def to_dict(self):
+        return json.loads(self.to_json())
 

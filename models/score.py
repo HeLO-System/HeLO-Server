@@ -6,7 +6,9 @@ for one clan is the sum of all matches of the clan.
 One match results automatically in at least two Score Objects.
 """
 
-from database.db import db
+import json
+
+from database.db import db, CustomQuerySet
 
 
 class Score(db.Document):

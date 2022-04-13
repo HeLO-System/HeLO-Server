@@ -112,9 +112,16 @@ class MatchesApi(Resource):
             if date_from != None: filter &= Q(date__gte=date_from)
             if date_to != None: filter &= Q(date__lte=date_to)
 
+            # significantly faster than len(), because it's server-sided
+            total = Match.objects(filter).only(*fields).count()
             matches = Match.objects(filter).only(*fields)
+
+            res = {
+                "total": total,
+                "items": matches.to_json_serializable()
+            }
                         
-            return get_response(matches)
+            return get_response(res)
         
         except:
             return handle_error(f'error getting matches')

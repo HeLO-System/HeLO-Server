@@ -6,7 +6,6 @@ import traceback
 from flask import request, Response, jsonify
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
-from numpy import iterable
             
 
 # build response
