@@ -91,15 +91,19 @@ class MatchesApi(Resource):
             conf = request.args.get("conf")
             event = request.args.get("event")
 
+            date = request.args.get("date")
+            date_from = request.args.get("date_from")
+            date_to = request.args.get("date_to")
+
             # take the query string and split it by '-'
             # typecast the strings into integers and deliver them as year, month, day to
             # the datetime constructor
             if not empty(date):
-                date = datetime(*[int(d) for d in request.args.get("date").split("-")])
+                date = datetime(*[int(d) for d in date.split("-")])
             if not empty(date_from):
-                date_from = datetime(*[int(d) for d in request.args.get("date_from").split("-")])
+                date_from = datetime(*[int(d) for d in date_from.split("-")])
             if not empty(date_to):
-                date_to = datetime(*[int(d) for d in request.args.get("date_to").split("-")])
+                date_to = datetime(*[int(d) for d in date_to.split("-")])
 
             fields = select.split(',') if select is not None else []
 
