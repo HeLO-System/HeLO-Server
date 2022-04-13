@@ -1,3 +1,7 @@
+"""
+Getter functions to retrieve certain information from the database
+"""
+
 from mongoengine.queryset.visitor import Q
 from mongoengine.errors import DoesNotExist
 

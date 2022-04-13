@@ -2,8 +2,9 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import DoesNotExist, OperationError
+from mongoengine.errors import DoesNotExist, OperationError, LookUpError
 from mongoengine.queryset.visitor import Q
+from datetime import datetime
 
 from models.match import Match
 from logic.calculations import calc_scores
@@ -88,15 +89,21 @@ class MatchesApi(Resource):
             duration_to = request.args.get("duration_to")
             factor = request.args.get("factor")
             conf = request.args.get("conf")
-            date = request.args.get("date")
-            date_from = request.args.get("date_from")
-            date_to = request.args.get("date_to")
+            event = request.args.get("event")
+
+            # take the query string and split it by '-'
+            # typecast the strings into integers and deliver them as year, month, day to
+            # the datetime constructor
+            date = datetime(*[int(d) for d in request.args.get("date").split("-")])
+            date_from = datetime(*[int(d) for d in request.args.get("date_from").split("-")])
+            date_to = datetime(*[int(d) for d in request.args.get("date_to").split("-")])
 
             fields = select.split(',') if select is not None else []
-                
-            filter = Q() # to perform advanced queries
-            # see the doc: https://docs.mongoengine.org/guide/querying.html#advanced-queries
-            # note, '&=' is the 'assign intersection operator'
+
+            # filter through the documents by assigning the intersection (&=)
+            # for every query parameter one by one  
+            filter = Q()
+
             if not empty(match_id): filter &= Q(match_id__icontains=match_id)
             for id in clan_ids:
                 if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
@@ -107,10 +114,13 @@ class MatchesApi(Resource):
             if not empty(duration_to): filter &= Q(duration__lte=duration_to)
             if not empty(factor): filter &= Q(factor=factor)
             if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
+            if not empty(event): filter &= Q(event__icontains=event)
+
             if not empty(date): filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
-            if date_from != None: filter &= Q(date__gte=date_from)
-            if date_to != None: filter &= Q(date__lte=date_to)
+            # edit: done
+            if not empty(date_from): filter &= Q(date__gte=date_from)
+            if not empty(date_to): filter &= Q(date__lte=date_to)
 
             # significantly faster than len(), because it's server-sided
             total = Match.objects(filter).only(*fields).count()
@@ -123,6 +133,9 @@ class MatchesApi(Resource):
                         
             return get_response(res)
         
+        except LookUpError:
+            return {"error": f"cannot resolve field 'select={select}'"}, 400
+
         except:
             return handle_error(f'error getting matches')
 
