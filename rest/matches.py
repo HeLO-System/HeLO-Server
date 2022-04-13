@@ -78,9 +78,11 @@ class MatchesApi(Resource):
             select = request.args.get("select")
             match_id = request.args.get("match_id")
             # comma separated list (or single entry)
+            # e.g. clan_ids=123,456
             clan_ids = request.args.get("clan_ids")
-            clan_ids = clan_ids.split(",")
+            clan_ids = clan_ids.split(",") if clan_ids is not None else []
             caps = request.args.get("caps")
+            caps_from = request.args.get("caps_from")
             map = request.args.get("map")
             duration_from = request.args.get("duration_from")
             duration_to = request.args.get("duration_to")
@@ -99,6 +101,7 @@ class MatchesApi(Resource):
             for id in clan_ids:
                 if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
             if not empty(caps): filter &= (Q(caps1=caps) | Q(caps2=caps))
+            if not empty(caps_from): filter &= (Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from))
             if not empty(map): filter &= Q(map__icontains=map)
             if not empty(duration_from): filter &= Q(duration__gte=duration_from)
             if not empty(duration_to): filter &= Q(duration__lte=duration_to)
