@@ -19,7 +19,8 @@ class ClanApi(Resource):
         try:
             try:
                 clan = Clan.objects.get(id=oid)
-                return redirect('/clan/' + clan.name)
+                name = "-".join(clan.name.split())
+                return redirect('/clan/' + name)
             except ValidationError:
                 clan = Clan.objects.search_text(oid).first()
                 res = {
