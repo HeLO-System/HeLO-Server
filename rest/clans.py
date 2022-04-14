@@ -23,12 +23,7 @@ class ClanApi(Resource):
                 return redirect('/clan/' + name)
             except ValidationError:
                 clan = Clan.objects.search_text(oid).first()
-                res = {
-                    "warning": "no valid object id",
-                    "instead": f"first clan matching '{oid}'",
-                    "result": clan.to_dict()
-                }
-                return get_response(res)
+                return get_response(clan)
 
         except AttributeError:
             return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a clan with the name '{oid}', but couldn't find any.", 400)
