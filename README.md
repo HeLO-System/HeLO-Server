@@ -1,6 +1,9 @@
 # HeLO API
 there is still work in progress ...
 
+documentation:
+https://app.swaggerhub.com/apis-docs/HeLO-System/HeLO-API/0.1#/
+
 - [HeLO API](#helo-api)
 - [Routes Overview](#routes-overview)
 - [Clan Objects](#clan-objects)
