@@ -11,11 +11,11 @@ class Match(db.Document):
     # something like "StDb-91.-2022-01-07" what ever
     match_id = db.StringField(required=True, unique=True)
     # unique identifiers (very long number) of the clan -> oid of the clan object in DB
-    clans1_ids = db.ListField()
-    clans2_ids = db.ListField()
+    clans1_ids = db.ListField(db.StringField())
+    clans2_ids = db.ListField(db.StringField())
     # player distribution is not required, and should be None if not provided
-    player_dist1 = db.ListField()
-    player_dist2 = db.ListField()
+    player_dist1 = db.ListField(db.IntField())
+    player_dist2 = db.ListField(db.IntField())
     # allies or axis
     side1        = db.StringField()
     side2        = db.StringField()
