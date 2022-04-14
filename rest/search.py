@@ -30,8 +30,6 @@ class SearchApi(Resource):
             # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
             cls = get_model(t)
             docs = cls.objects.search_text(q)[:limit]
-
-            return get_response(docs)
         
         except ValueError:
             return {
@@ -58,3 +56,6 @@ class SearchApi(Resource):
                 "error": "mandatory query paramter 'select' is 'None' or empty, please enter a keyword",
                 "example": ".../search?select=core&type=match"
             }, 400
+        
+        else:
+            return get_response(docs)
