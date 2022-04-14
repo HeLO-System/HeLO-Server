@@ -126,8 +126,6 @@ class ClansApi(Resource):
 
         except NotUniqueError:
             return handle_error(f"clan already exists in database: {clan.tag}", 400)
-        except OperationError:
-            return handle_error(f"Authorization failed", 401)
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
         except Exception as e:

@@ -49,8 +49,6 @@ class MatchApi(Resource):
                     start_recalculation(match)
                     print("match and scores recalculated")
             
-        except OperationError:
-            return handle_error(f"Authorization failed", 401)
         except DoesNotExist:
             return handle_error(f"error updating match in database, match not found by oid: {oid}", 404)
         except ValueError:
@@ -165,9 +163,7 @@ class MatchesApi(Resource):
             # a match will always need at least the confirmation of the other team
             # therefore, there is no point of creating the scores within the POST method
         except NotUniqueError:
-            return handle_error(f"clan already exists in database", 400)
-        except OperationError:
-            return handle_error(f"Authorization failed", 401)
+            return handle_error(f"match already exists in database", 400)
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
         except Exception as e:

@@ -48,8 +48,8 @@ def admin_required():
             if claims["is_admin"]:
                 return fn(*args, **kwargs)
             else:
-                #return jsonify(msg="This action can be performed by an administrator only!"), 403 # does not work
-                return "This action can be performed by an administrator only!", 403
+                #return "This action can be performed by an administrator only!", 401
+                return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper
 

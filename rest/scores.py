@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from mongoengine import Q
-from mongoengine.errors import LookUpError
+from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
 
 from models.score import Score
 from ._common import get_response, handle_error, empty, admin_required
@@ -14,9 +14,14 @@ class ScoreApi(Resource):
     def get(self, oid):
         try:
             score = Score.objects.get(id=oid)
+        except ValidationError:
+            return handle_error("not a valid object id", 400)
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error getting score from database, clan not found by oid: {oid}, terminated with error: {e}", 404)
+        else:
             return get_response(score)
-        except:
-            return handle_error(f"Error getting scores from database, score not found by oid: {oid}")     
 
 
     # update scores by object id
@@ -25,27 +30,32 @@ class ScoreApi(Resource):
     def put(self, oid):
         try:
             scores = Score.objects.get(id=oid)        
-            try:
-                scores.update(**request.get_json())
-                return '', 204
-            except:
-                return handle_error(f"error updating scores in database: {oid}")
-        except:
-            return handle_error(f"error updating scores in database, scores not found by oid: {oid}")
+            scores.update(**request.get_json())
+
+        except ValidationError:
+                return handle_error("not a valid object id", 400)
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error updating score in database, terminated with error: {e}", 500)
+        else:
+            return "", 204
 
     # update scores by object id
     @admin_required()
     def delete(self, oid):
         try:
             scores = Score.objects.get(id=oid)        
-            try:
-                scores = scores.delete()
-                return '', 204
-            except:
-                return handle_error(f"error deleting scores in database: {oid}")
-        except:
-            return handle_error(f"error deleting scores in database, scores not found by oid: {oid}")
-        
+            scores = scores.delete()
+
+        except ValidationError:
+                return handle_error("not a valid object id", 400)
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error deleting score in database, terminated with error: {e}", 500)
+        else:
+            return "", 204
 
 
 
@@ -85,14 +95,13 @@ class ScoresApi(Resource):
                 "items": scores.to_json_serializable()
             }
 
-            return get_response(res)
-
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
+        except Exception as e:
+            return handle_error(f"Error getting scores from database, terminated with error: {e}", 500)
+        else:
+            return get_response(res)
 
-        except:
-            return handle_error("Error getting scores from database")
-        
 
     # add new scores
     # will be deleted soon
@@ -100,11 +109,11 @@ class ScoresApi(Resource):
     def post(self):
         try:
             score = Score(**request.get_json())
-            try: 
-                score = score.save()
-                return get_response({ "id": score.id })
-            except:
-                return handle_error(f"error creating scores in database: {score.id}")
-        except:
-            return handle_error(f'error creating scores in database')
-        
+            score = score.save()
+
+        except ValidationError as e:
+            return handle_error(f"required field is empty: {e}")
+        except Exception as e:
+            return handle_error(f"error creating score in database, terminated with error: {e}", 500)
+        else:
+            return get_response({ "id": score.id })
