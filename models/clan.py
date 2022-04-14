@@ -32,7 +32,7 @@ class Clan(db.Document):
     meta = {
         "indexes": [
             {
-                "fields": ["$tag", "$name"]
+                "fields": ["$tag", "$name", "$alt_tags"]
             }
         ],
         "queryset_class": CustomQuerySet

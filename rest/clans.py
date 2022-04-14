@@ -1,5 +1,5 @@
 # rest/clans.py
-from flask import request
+from flask import request, redirect, Response
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
@@ -7,8 +7,6 @@ from requests import get
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
-from bson.objectid import ObjectId
-from bson.errors import InvalidId
 
 from models.clan import Clan
 from ._common import get_response, handle_error, admin_required, empty
@@ -19,13 +17,10 @@ class ClanApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            # byte_oid = bytes(oid, encoding="utf-8")
-            # print(byte_oid)
-            # print(ObjectId.is_valid(ObjectId(oid)))
             try:
                 clan = Clan.objects.get(id=oid)
+                return redirect('/clan/' + clan.name)
             except ValidationError:
-                #clan = Clan.objects(name__wholeword=oid).first()
                 clan = Clan.objects.search_text(oid).first()
                 res = {
                     "warning": "no valid object id",
@@ -40,8 +35,6 @@ class ClanApi(Resource):
                 return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting clan from database, clan not found by oid: {oid}, terminated with error: {e}", 500)
-        else:
-            return get_response(clan, 200)
 
 
     # update clan by object id
