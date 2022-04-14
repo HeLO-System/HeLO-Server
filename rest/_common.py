@@ -3,19 +3,19 @@ from functools import wraps
 import json
 import logging
 import traceback
-from flask import request, Response, jsonify
+from flask import Response
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
             
 
 # build response
-def get_response(obj):
+def get_response(obj, status=200):
     if type(obj) is dict:
-        return Response(json.dumps(obj), mimetype="application/json", status=200)
+        return Response(json.dumps(obj), mimetype="application/json", status=status)
     elif type(obj) is str:
-        return Response(obj, mimetype="application/json", status=200)
+        return Response(obj, mimetype="application/json", status=status)
     else:
-        return Response(obj.to_json(), mimetype="application/json", status=200)
+        return Response(obj.to_json(), mimetype="application/json", status=status)
 
 
 # build error json
