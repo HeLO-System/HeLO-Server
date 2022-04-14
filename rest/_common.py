@@ -19,9 +19,10 @@ def get_response(obj, status=200):
 
 
 # build error json
-def handle_error(text): 
+def handle_error(text, status=400, add_info=None): 
     logging.error(traceback.format_exc())
-    return { "error": text }, 200
+    if add_info is None:
+        return {"error": text}, status
 
 
 # check for None or empty string

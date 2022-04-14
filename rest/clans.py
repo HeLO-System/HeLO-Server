@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist, LookUpError
+from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
@@ -17,14 +17,15 @@ class ClanApi(Resource):
     def get(self, oid):
         try:
             clan = Clan.objects.get(id=oid)
-            return get_response(clan, 200)
         except ValidationError:
-            return handle_error("not a valid object id", 404)
+            return handle_error("not a valid object id", 400)
         except DoesNotExist:
                 return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting clan from database, clan not found by oid: {oid}, terminated with error: {e}", 404)
-        
+        else:
+            return get_response(clan, 200)
+
 
     # update clan by object id
     @jwt_required()
@@ -32,20 +33,19 @@ class ClanApi(Resource):
         try:
             clan = Clan.objects.get(id=oid)
             # todo - validate TODO: was ist mit validate gemeint?
-            try:
-                clan.update(last_updated=datetime.now(), **request.get_json())
-                return get_response("", 204)
+            clan.update(last_updated=datetime.now(), **request.get_json())
 
-            except BadRequest:
-                return handle_error("Bad Request", 400)
-            except Exception as e:
-                return handle_error(f"error updating clan in database: {clan.tag}, terminated with error: {e}")
+        except BadRequest:
+            return handle_error("Bad Request", 400)
         except ValidationError:
                 return handle_error("not a valid object id", 400)
         except DoesNotExist:
                 return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error updating clan in database, terminated with error: {e}", 500)
+        else:
+            return get_response("", 204)
+
 
     # update clan by object id
     # admin only
@@ -53,17 +53,18 @@ class ClanApi(Resource):
     def delete(self, oid):
         try:
             clan = Clan.objects.get(id=oid)        
-            try:
-                clan = clan.delete()
-                return get_response("", 204)
-            except Exception as e:
-                return handle_error(f"error deleting clan in database: {clan.tag}, terminated with error: {e}")
+            clan = clan.delete()
+
+        except OperationError:
+            return handle_error(f"Authorization failed", 401)
         except ValidationError:
                 return handle_error("not a valid object id", 400)
         except DoesNotExist:
                 return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error deleting clan in database, terminated with error: {e}", 500)
+        else:
+            return get_response("", 204)
 
 
 class ClansApi(Resource):
@@ -106,13 +107,12 @@ class ClansApi(Resource):
                 "items": clans.to_json_serializable()
             }
 
-            return get_response(res)
-
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
-
         except Exception as e:
             return handle_error(f"error getting clans, terminated with error: {e}", 500)
+        else:
+            return get_response(res)
 
 
     # add new clan
@@ -122,15 +122,15 @@ class ClansApi(Resource):
         try:
             clan = Clan(**request.get_json())
             # todo - validate
-            try:
-                clan = clan.save()
-                return get_response({"id": str(clan.id)}, 201)
+            clan = clan.save()
 
-            except NotUniqueError:
-                return handle_error(f"clan already exists in database: {clan.tag}")
-            except ValidationError as e:
-                return handle_error(f"required field is empty: {e}")
-            except:
-                return handle_error(f"error creating clan in database: {clan.tag}")
-        except:
-            return handle_error(f'error creating clans in database')
+        except NotUniqueError:
+            return handle_error(f"clan already exists in database: {clan.tag}", 400)
+        except OperationError:
+            return handle_error(f"Authorization failed", 401)
+        except ValidationError as e:
+            return handle_error(f"required field is empty: {e}")
+        except Exception as e:
+            return handle_error(f"error creating clans in database, terminated with error: {e}", 500)
+        else:
+            return get_response({"id": str(clan.id)}, 201)

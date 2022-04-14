@@ -2,7 +2,7 @@
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-from mongoengine.errors import DoesNotExist, OperationError, LookUpError
+from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
@@ -19,8 +19,12 @@ class MatchApi(Resource):
         try:
             match = Match.objects.get(id=oid)
             return get_response(match)
-        except:
-            return handle_error(f"error getting match from database, match not found by oid: {oid}")
+        except ValidationError:
+            return handle_error("not a valid object id", 400)
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
         
 
     # update match by object id
@@ -39,33 +43,38 @@ class MatchApi(Resource):
             claims = get_jwt()
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
-            if match.recalculate and claims["is_admin"]:
-                start_recalculation(match)
-                print("match and scores recalculated")
+            if match.recalculate:
+                if not claims["is_admin"]: raise OperationError
+                else:
+                    start_recalculation(match)
+                    print("match and scores recalculated")
             
         except OperationError:
-            return handle_error(f"error updating match in database: {oid}")
+            return handle_error(f"Authorization failed", 401)
         except DoesNotExist:
-            return handle_error(f"error updating match in database, match not found by oid: {oid}")
+            return handle_error(f"error updating match in database, match not found by oid: {oid}", 404)
         except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong")
+            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
         except RuntimeError:
-            return handle_error(f"error updating match - a clan cannot play against itself")
+            return handle_error(f"error updating match - a clan cannot play against itself", 400)
         else:
-            return '', 204
+            return get_response("", 204)
 
     # update match by object id
     @jwt_required()
     def delete(self, oid):
         try:
             match = Match.objects.get(id=oid)        
-            try:
-                match = match.delete()
-                return '', 204
-            except:
-                return handle_error(f"error deleting match in database: {oid}")
-        except:
-            return handle_error(f"error deleting match in database, match not found by oid: {oid}")
+            match = match.delete()
+
+        except ValidationError:
+                return handle_error("not a valid object id", 400)
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
+        else:
+            return get_response("", 204)
         
 
 
@@ -137,14 +146,13 @@ class MatchesApi(Resource):
                 "total": total,
                 "items": matches.to_json_serializable()
             }
-                        
-            return get_response(res)
         
         except LookUpError:
-            return {"error": f"cannot resolve field 'select={select}'"}, 400
-
-        except:
-            return handle_error(f'error getting matches')
+            return handle_error(f"cannot resolve field 'select={select}'", 400)
+        except Exception as e:
+            return handle_error(f"error getting matches, terminated with error: {e}", 500)
+        else:
+            return get_response(res)
 
 
     # add new match
@@ -156,7 +164,13 @@ class MatchesApi(Resource):
             need_conf = match.needs_confirmations() # just to remind the user
             # a match will always need at least the confirmation of the other team
             # therefore, there is no point of creating the scores within the POST method
-        except:
-            return handle_error(f'error creating match in database')
+        except NotUniqueError:
+            return handle_error(f"clan already exists in database", 400)
+        except OperationError:
+            return handle_error(f"Authorization failed", 401)
+        except ValidationError as e:
+            return handle_error(f"required field is empty: {e}")
+        except Exception as e:
+            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not need_conf})
+            return get_response({"match_id": match.match_id, "confirmed": not need_conf}, 201)
