@@ -6,6 +6,8 @@ from mongoengine.errors import NotUniqueError, OperationError, ValidationError, 
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
 
 from models.clan import Clan
 from ._common import get_response, handle_error, admin_required, empty
@@ -16,7 +18,15 @@ class ClanApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            clan = Clan.objects.get(id=oid)
+            # byte_oid = bytes(oid, encoding="utf-8")
+            # print(byte_oid)
+            # print(ObjectId.is_valid(ObjectId(oid)))
+            try:
+                print(ObjectId.is_valid(ObjectId(oid)))
+                clan = Clan.objects.get(id=oid)
+            except InvalidId:
+                clan = Clan.objects.get(name__icontains=oid)
+
         except ValidationError:
             return handle_error("not a valid object id", 400)
         except DoesNotExist:
