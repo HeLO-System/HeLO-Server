@@ -2,7 +2,10 @@
 first level class
 """
 
+from email.policy import default
 import json
+
+from numpy import require
 
 from database.db import db, CustomQuerySet
 
@@ -11,25 +14,25 @@ class Match(db.Document):
     # something like "StDb-91.-2022-01-07" what ever
     match_id = db.StringField(required=True, unique=True)
     # unique identifiers (very long number) of the clan -> oid of the clan object in DB
-    clans1_ids = db.ListField()
-    clans2_ids = db.ListField()
+    clans1_ids = db.ListField(db.StringField(), required=True)
+    clans2_ids = db.ListField(db.StringField(), required=True)
     # player distribution is not required, and should be None if not provided
-    player_dist1 = db.ListField()
-    player_dist2 = db.ListField()
+    player_dist1 = db.ListField(db.IntField())
+    player_dist2 = db.ListField(db.IntField())
     # allies or axis
     side1        = db.StringField()
     side2        = db.StringField()
     # strong points hold at the end of the game
-    caps1        = db.IntField()
-    caps2        = db.IntField()
+    caps1        = db.IntField(required=True)
+    caps2        = db.IntField(required=True)
     # number of players on each side (assuming both teams had the same number of players)
-    players      = db.IntField()
+    players      = db.IntField(default=50)
     map          = db.StringField()
     date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
     duration     = db.IntField()
     # competitive factor, see HeLO calculations
-    factor       = db.FloatField()
+    factor       = db.FloatField(default=1.0)
     # name of the tournament, of just a training match
     event        = db.StringField()
     # confirmation, very important

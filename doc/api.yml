@@ -1,0 +1,276 @@
+openapi: '3.0.2'
+info:
+  title: HeLO API
+  version: '0.1'
+  description: Public API for the HeLO System
+servers:
+  - url: https://helo-system.herokuapp.com
+paths:
+  /clans:
+    get:
+      tags:
+        - Clan
+      summary: Returns all (or narrow down by queries) clan objets.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                example:
+                - tag: CoRe
+                  name: Corvus Rex
+                  score: 734
+                - tag: StDb
+                  name: Stoßrupp Donnerbalken
+                  score: 675
+                # items:
+                #   $ref: '#/components/schemas/Clan'
+                  
+    post:
+      tags:
+        - Clan
+      summary: Creates a new clan object.
+      requestBody:
+        #$ref: '#/components/requestBodies/Clan'
+        required: true
+        description: see 'schemas' for complete example of a clan
+        content:
+          application/json:
+            schema:
+              type: object
+            examples:
+              CoRe:
+                value:
+                  tag: CoRe
+                  name: Corvus Rex
+              StDb:
+                value:
+                  tag: StDb
+                  name: Stoßtrupp Donnerbalken
+                  flag: flag_de
+                  icon: https://cool-icons.com
+
+      responses:
+        '201':
+          description: Created
+  
+  /clan/{oid}:
+    parameters:
+      - name: oid
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: unqiue id of a clan object
+    get:
+      tags:
+        - Clan
+      summary: Returns a single clan object.
+      responses:
+        '200':
+          $ref: '#/components/responses/Clan'
+        '400':
+          description: Not a valid object id.
+        '404':
+          description: Object does not exist.
+    put:
+      tags:
+        - Clan
+      summary: Changes a clan object.
+      responses:
+        '204':
+          description: No Content
+
+    delete:
+      tags:
+        - Clan
+      summary: Deletes a clan object.
+      responses:
+        '204':
+          description: OK
+
+
+
+
+components:
+  requestBodies:
+    Clan:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Clan'
+
+  responses:
+    Clan:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Clan'
+
+  # -- Schemas --
+  schemas:
+    # Clan Schema
+    Clan:
+      type: object
+      required:
+        - tag
+      properties:
+        tag:
+          type: string
+          maxLength: 10
+          example: CoRe
+          description: short tag of the clan, unqiue
+        name:
+          type: string
+          example: Corvus Rex
+          description: full name of the clan
+        score:
+          type: integer
+          default: 600
+          minimum: 0
+          example: 734
+          description: current HeLO Score
+        num_matches:
+          type: integer
+          default: 0
+          minimum: 0
+          example: 14
+          description: number of played num_matches
+        flag:
+          type: string
+          example: flag_de
+          description: Discord icon ID of flag of origin, e.g. 'flag_eu' if the team's origin is Europe
+        invite:
+          type: string
+          example: https://discord.gg/dmtcbrV7t5
+          description: discord invite link
+        conf:
+          type: string
+          description: not in use, reserved
+        icon:
+          type: string
+          default: https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1
+          description: link to clan's icon
+        last_updated:
+          type: string
+          default: datetime.now()
+          description: datetime when the clan was last updated, should not be set by a user, will be set by the server
+
+    # Match Schema
+    Match:
+      type: object
+      required:
+        - "match_id"
+        - caps1
+        - caps2
+        - "date"
+      properties:
+        match_id:
+          type: string
+          example: StDb-CoRe-2022-03-04
+          description: string to identify the match, unqiue
+        clans1_ids:
+          type: array
+          minimum: 1
+          example:
+          - 624d8f6907386960f21660ae
+          - 624d8f7e07386960f21660af
+          description: ids of participating clans (side 1), array of 12 Byte Hex ids (strings)
+        clans2_ids:
+          type: array
+          minimum: 1
+          example:
+          - 614d8f6907387960f21660fa
+          - 614d8f7e07386920f21660ea
+          description: ids of participating clans (side 1), array of 12 Byte Hex ids (strings)
+        player_dist1:
+          type: array
+          example:
+          - 30
+          - 20
+          description: distribution of the players on side 1, must be in the same order as 'clans1_ids', array of integers, only relevant for cooperation games
+        player_dist2:
+          type: array
+          example:
+          - 15
+          - 35
+          description: distribution of the players on side 2, must be in the same order as 'clans2_ids', array of integers, only relevant for cooperation games
+        side1:
+          type: string
+          example: Axis
+          enum:
+            - Axis
+            - Allies
+          description: which fraction clans1 played as during the match
+        side2:
+          type: string
+          example: Allies
+          enum:
+            - Axis
+            - Allies
+          description: which fraction clans2 played as during the match
+        caps1:
+          type: integer
+          minimum: 0
+          maximum: 5
+          example: 3
+          description: number of strongpoints side1 held at the end of the match
+        caps2:
+          type: integer
+          minimum: 0
+          maximum: 5
+          example: 2
+          description: number of strongpoints side2 held at the end of the match
+        players:
+          type: integer
+          minimum: 3
+          maximum: 50
+          example: 49
+          description: how many players played on one side, either this property or both 'player_dist1' and 'player_dist2' must be given
+        map:
+          type: string
+          example: SME
+          description: map on which the match was played
+        date:
+          type: string
+          description: datetime object, when the match was played, by using POST, this can be a '-' separated string, YYYY-MM-DD
+        duration:
+          type: integer
+          minimum: 0
+          maximum: 90
+          example: 35
+          description: how long the match took (in minutes)
+        factor:
+          type: number
+          format: float
+          enum:
+          - 0.5
+          - 0.8
+          - 1.0
+          - 1.2
+          example: 1.0
+          description: type of the match expressed as the competitive factor, the higher the value the more the game is weighted
+        event:
+          type: string
+          example: Seasonal
+          description: event the match belongs to
+        conf1:
+          type: string
+          example: 407302122921656340
+          description: (discord) user id of the representative confirming the match result for side1
+        conf2:
+          type: string
+          example: 307302102951656940
+          description: (discord) user id of the representative confirming the match result for side2
+        score_posted:
+          type: boolean
+          example: false
+          description: whether the scores resulting from the match were posted or not
+        recalculate:
+          type: boolean
+          example: false
+          description: for admins only, triggers a recalculation process with the match as root match
+

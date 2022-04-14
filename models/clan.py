@@ -24,7 +24,7 @@ class Clan(db.Document):
     # confirmation, reserved ??
     conf = db.StringField()
     # alternative tags, if a clan was renamed, reserved
-    alt_tags = db.ListField()
+    alt_tags = db.ListField(db.StringField())
     # link to the icon of a clan
     icon = db.StringField(default="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1")
     # when the clan was last updated (e.g. the score)
@@ -32,7 +32,7 @@ class Clan(db.Document):
     meta = {
         "indexes": [
             {
-                "fields": ["$tag", "$name"]
+                "fields": ["$tag", "$name", "$alt_tags"]
             }
         ],
         "queryset_class": CustomQuerySet
