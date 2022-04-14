@@ -3,25 +3,27 @@ from functools import wraps
 import json
 import logging
 import traceback
-from flask import request, Response, jsonify
+from flask import Response
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
             
 
 # build response
-def get_response(obj):
+def get_response(obj, status=200):
     if type(obj) is dict:
-        return Response(json.dumps(obj), mimetype="application/json", status=200)
+        return Response(json.dumps(obj), mimetype="application/json", status=status)
     elif type(obj) is str:
-        return Response(obj, mimetype="application/json", status=200)
+        return Response(obj, mimetype="application/json", status=status)
     else:
-        return Response(obj.to_json(), mimetype="application/json", status=200)
+        return Response(obj.to_json(), mimetype="application/json", status=status)
 
 
 # build error json
-def handle_error(text): 
+# add_info, reserved, will be used later ... maybe
+def handle_error(text, status=400, add_info=None): 
     logging.error(traceback.format_exc())
-    return { "error": text }, 200
+    if add_info is None:
+        return {"error": text}, status
 
 
 # check for None or empty string
@@ -47,8 +49,8 @@ def admin_required():
             if claims["is_admin"]:
                 return fn(*args, **kwargs)
             else:
-                #return jsonify(msg="This action can be performed by an administrator only!"), 403 # does not work
-                return "This action can be performed by an administrator only!", 403
+                #return "This action can be performed by an administrator only!", 401
+                return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper
 
