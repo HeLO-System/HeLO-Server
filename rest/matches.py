@@ -98,6 +98,13 @@ class MatchesApi(Resource):
             conf = request.args.get("conf")
             event = request.args.get("event")
 
+            # optional, quality of life query parameters
+            limit = request.args.get("limit", default=0, type=int)
+            offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
+
             date = request.args.get("date")
             date_from = request.args.get("date_from")
             date_to = request.args.get("date_to")
@@ -137,8 +144,11 @@ class MatchesApi(Resource):
             if not empty(date_to): filter &= Q(date__lte=date_to)
 
             # significantly faster than len(), because it's server-sided
-            total = Match.objects(filter).only(*fields).count()
-            matches = Match.objects(filter).only(*fields)
+            total = Match.objects(filter).only(*fields).count() if limit == 0 else limit
+            if desc is None:
+                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
 
             res = {
                 "total": total,

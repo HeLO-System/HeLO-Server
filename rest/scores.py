@@ -67,12 +67,19 @@ class ScoresApi(Resource):
             select = request.args.get("select")
             clan = request.args.get("clan_id")
             match_id = request.args.get("match_id")
-            num = request.args.get("num")
+            num = request.args.get("num_matches")
             num_from = request.args.get("num_from")
             num_to = request.args.get("num_to")
             score = request.args.get("score")
             score_from = request.args.get("score_from")
             score_to = request.args.get("score_to")
+
+            # optional, quality of life query parameters
+            limit = request.args.get("limit", default=0, type=int)
+            offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
 
             fields = select.split(',') if select is not None else []
 
@@ -87,8 +94,12 @@ class ScoresApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
             
-            total = Score.objects(filter).only(*fields).count()
-            scores = Score.objects(filter).only(*fields)
+            # significantly faster than len(), because it's server-sided
+            total = Score.objects(filter).only(*fields).count() if limit == 0 else limit
+            if desc is None:
+                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
 
             res = {
                 "total": total,
