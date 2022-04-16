@@ -3,9 +3,11 @@ from flask import request
 from flask_restful import Resource
 from mongoengine import Q
 from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
+from werkzeug.exceptions import BadRequest
 
 from models.score import Score
-from ._common import get_response, handle_error, empty, admin_required
+from schemas.query_schemas import ScoreQuerySchema
+from ._common import get_response, handle_error, empty, admin_required, validate_query
 
 
 class ScoreApi(Resource):
@@ -64,15 +66,23 @@ class ScoresApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
+            validate_query(ScoreQuerySchema(), request.args)
             select = request.args.get("select")
             clan = request.args.get("clan_id")
             match_id = request.args.get("match_id")
-            num = request.args.get("num")
-            num_from = request.args.get("num_from")
-            num_to = request.args.get("num_to")
+            num = request.args.get("num_matches")
+            num_from = request.args.get("num_matches_from")
+            num_to = request.args.get("num_matches_to")
             score = request.args.get("score")
             score_from = request.args.get("score_from")
             score_to = request.args.get("score_to")
+
+            # optional, quality of life query parameters
+            limit = request.args.get("limit", default=0, type=int)
+            offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
 
             fields = select.split(',') if select is not None else []
 
@@ -87,20 +97,20 @@ class ScoresApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
             
-            total = Score.objects(filter).only(*fields).count()
-            scores = Score.objects(filter).only(*fields)
+            if desc is None:
+                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
 
-            res = {
-                "total": total,
-                "items": scores.to_json_serializable()
-            }
-
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
         except Exception as e:
             return handle_error(f"Error getting scores from database, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(scores)
 
 
     # add new scores

@@ -25,6 +25,11 @@ class Score(db.Document):
     # IMPORTANT: clan.score must be updated first!
     # score_before = db.IntField(required=True)
     meta = {
+            "indexes": [
+                {
+                    "fields": ["$match_id"]
+                }
+            ],
             "queryset_class": CustomQuerySet
         }
 

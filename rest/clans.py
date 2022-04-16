@@ -1,15 +1,22 @@
 # rest/clans.py
-from flask import request, redirect, Response
+from flask import request, redirect, abort
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
-from requests import get
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
 from models.clan import Clan
-from ._common import get_response, handle_error, admin_required, empty
+from schemas.query_schemas import ClanQuerySchema
+from ._common import get_response, handle_error, admin_required, empty, validate_query
+
+# https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
+# https://www.programcreek.com/python/example/108223/marshmallow.validate.OneOf
+# https://marshmallow.readthedocs.io/en/stable/marshmallow.validate.html?highlight=oneOf#marshmallow.validate.OneOf
+# https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
+# class QuerySchema(Schema):
+#     select = fields.Str(required=True, validate=OneOf(["name"]))
 
 
 class ClanApi(Resource):
@@ -78,15 +85,23 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
+            validate_query(ClanQuerySchema(), request.args)
             # optional, clan tag
             tag = request.args.get("tag")
             # optional, full name
             name = request.args.get("name")
             # optional, number of matches
-            num = request.args.get("num")
+            num = request.args.get("num_matches")
             # optional, HeLO score 'gte' and 'lte'
             score_from = request.args.get("score_from")
             score_to = request.args.get("score_to")
+
+            # optional, quality of life query parameters
+            limit = request.args.get("limit", default=0, type=int)
+            offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
 
             # optional, narrows the return to selected fields
             # should be a comma separated list
@@ -104,21 +119,20 @@ class ClansApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
             
-            # significantly faster than len(), because it's server-sided
-            total = Clan.objects(filter).only(*fields).count()
-            clans = Clan.objects(filter).only(*fields)
-
-            res = {
-                "total": total,
-                "items": clans.to_json_serializable()
-            }
-
+            if desc is None:
+                clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+        
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
             return handle_error(f"error getting clans, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(clans)
 
 
     # add new clan

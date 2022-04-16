@@ -5,11 +5,13 @@ from flask_jwt_extended import jwt_required
 from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
+from werkzeug.exceptions import BadRequest
 
 from models.match import Match
+from schemas.query_schemas import MatchQuerySchema
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
-from ._common import get_response, handle_error, get_jwt, empty
+from ._common import get_response, handle_error, get_jwt, empty, validate_query
 
 
 class MatchApi(Resource):
@@ -81,6 +83,7 @@ class MatchesApi(Resource):
     # get all or filtered by match id
     def get(self):
         try:
+            validate_query(MatchQuerySchema(), request.args)
             # select grenzt angefragte Felder ein, z.B. select=match_id kommt nur
             # die match_id zurück, nciht das ganze Objekt aus der DB
             select = request.args.get("select")
@@ -97,6 +100,13 @@ class MatchesApi(Resource):
             factor = request.args.get("factor")
             conf = request.args.get("conf")
             event = request.args.get("event")
+
+            # optional, quality of life query parameters
+            limit = request.args.get("limit", default=0, type=int)
+            offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
 
             date = request.args.get("date")
             date_from = request.args.get("date_from")
@@ -136,21 +146,20 @@ class MatchesApi(Resource):
             if not empty(date_from): filter &= Q(date__gte=date_from)
             if not empty(date_to): filter &= Q(date__lte=date_to)
 
-            # significantly faster than len(), because it's server-sided
-            total = Match.objects(filter).only(*fields).count()
-            matches = Match.objects(filter).only(*fields)
-
-            res = {
-                "total": total,
-                "items": matches.to_json_serializable()
-            }
+            if desc is None:
+                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
         
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
             return handle_error(f"error getting matches, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(matches)
 
 
     # add new match
