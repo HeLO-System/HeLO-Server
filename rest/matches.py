@@ -143,24 +143,17 @@ class MatchesApi(Resource):
             if not empty(date_from): filter &= Q(date__gte=date_from)
             if not empty(date_to): filter &= Q(date__lte=date_to)
 
-            # significantly faster than len(), because it's server-sided
-            total = Match.objects(filter).only(*fields).count() if limit == 0 else limit
             if desc is None:
                 matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
             else:
                 matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-
-            res = {
-                "total": total,
-                "items": matches.to_json_serializable()
-            }
         
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
             return handle_error(f"error getting matches, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(matches)
 
 
     # add new match

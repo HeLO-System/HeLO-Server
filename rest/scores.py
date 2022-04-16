@@ -94,24 +94,17 @@ class ScoresApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
             
-            # significantly faster than len(), because it's server-sided
-            total = Score.objects(filter).only(*fields).count() if limit == 0 else limit
             if desc is None:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
             else:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-
-            res = {
-                "total": total,
-                "items": scores.to_json_serializable()
-            }
 
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
         except Exception as e:
             return handle_error(f"Error getting scores from database, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(scores)
 
 
     # add new scores

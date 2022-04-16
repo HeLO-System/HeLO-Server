@@ -119,19 +119,10 @@ class ClansApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
             
-            # significantly faster than len(), because it's server-sided
-            total = Clan.objects(filter).only(*fields).count() if limit == 0 else limit
             if desc is None:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
             else:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-
-            res = {
-                "total": total,
-                "items": clans.to_json_serializable()
-            }
-
-            return get_response(clans)
         
         except BadRequest as e:
             # TODO: better error response
@@ -141,7 +132,7 @@ class ClansApi(Resource):
         except Exception as e:
             return handle_error(f"error getting clans, terminated with error: {e}", 500)
         else:
-            return get_response(res)
+            return get_response(clans)
 
 
     # add new clan
