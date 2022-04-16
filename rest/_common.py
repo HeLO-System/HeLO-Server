@@ -3,7 +3,7 @@ from functools import wraps
 import json
 import logging
 import traceback
-from flask import Response
+from flask import Response, abort
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
             
@@ -53,4 +53,9 @@ def admin_required():
                 return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper
+
+
+def validate_query(schema, args):
+    errors = schema.validate(args)
+    if errors: abort(400, str(errors))
 

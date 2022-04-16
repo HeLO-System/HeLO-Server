@@ -1,15 +1,22 @@
 # rest/clans.py
-from flask import request, redirect
+from flask import request, redirect, abort
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
-
 from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
 from models.clan import Clan
-from ._common import get_response, handle_error, admin_required, empty
+from schemas.query_schemas import ClanQuerySchema
+from ._common import get_response, handle_error, admin_required, empty, validate_query
+
+# https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
+# https://www.programcreek.com/python/example/108223/marshmallow.validate.OneOf
+# https://marshmallow.readthedocs.io/en/stable/marshmallow.validate.html?highlight=oneOf#marshmallow.validate.OneOf
+# https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
+# class QuerySchema(Schema):
+#     select = fields.Str(required=True, validate=OneOf(["name"]))
 
 
 class ClanApi(Resource):
@@ -78,6 +85,7 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
+            validate_query(ClanQuerySchema(), request.args)
             # optional, clan tag
             tag = request.args.get("tag")
             # optional, full name
@@ -123,6 +131,11 @@ class ClansApi(Resource):
                 "items": clans.to_json_serializable()
             }
 
+            return get_response(clans)
+        
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
