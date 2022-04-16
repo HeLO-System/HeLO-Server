@@ -1,8 +1,9 @@
 from marshmallow import Schema, ValidationError, fields
-from marshmallow.validate import OneOf, Length, And, Range, Predicate, Validator
+from marshmallow.validate import OneOf, Length, And, Range, Validator
 import typing
 
 from models.clan import Clan
+from models.match import Match
 
 # example to chain multiple validators:
 # tag = fields.String(validate=And(Length(max=10), OneOf(["name"])))
@@ -37,12 +38,29 @@ class ClanQuerySchema(Schema):
     tag = fields.String(validate=And(Length(max=10)))
     name = fields.String()
     num_matches = fields.Integer(validate=Range(min_inclusive=0))
-    score_from = fields.Integer(validate=Range(min_inclusive=0, max_inclusive=9999))
-    score_to = fields.Integer(validate=Range(min_inclusive=0, max_inclusive=9999))
+    score_from = fields.Integer(validate=Range(min_inclusive=0))
+    score_to = fields.Integer(validate=Range(min_inclusive=0))
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
     select = fields.String(validate=In(Clan.__dict__.keys()))
+
+
+class MatchQuerySchema(Schema):
+    select = fields.String(validate=In(Match.__dict__.keys()))
+    match_id = fields.String()
+    clan_ids = fields.String()
+    caps = fields.Integer(validate=Range(min_inclusive=0, max_inclusive=5))
+    caps_from = fields.Integer(validate=Range(min_inclusive=0, max_inclusive=5))
+    map = fields.String()
+    duration_from = fields.Integer(validate=Range(min_inclusive=8, max_inclusive=90))
+    duration_to = fields.Integer(validate=Range(min_inclusive=8, max_inclusive=90))
+    factor = fields.Float(validate=OneOf([0.5, 0.8, 1.0, 1.2]))
+    conf = fields.String()
+    event = fields.String()
+    limit = fields.Integer(validate=Range(min_inclusive=0))
+    offset = fields.Integer(validate=Range(min_inclusive=0))
+    sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
 
 
 
@@ -54,3 +72,4 @@ class SearchQuerySchema(Schema):
     type = fields.String(required=True, validate=OneOf(["clan", "match", "score"]))
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
+    sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))

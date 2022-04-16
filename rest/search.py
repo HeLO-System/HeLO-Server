@@ -21,14 +21,20 @@ class SearchApi(Resource):
             # optional, maximum number of results to return
             limit = request.args.get("limit", default=0, type=int)
             offset = request.args.get("offset", default=0, type=int)
+            sort_by = request.args.get("sort_by", default=None, type=str)
+            # descending order
+            desc = request.args.get("desc", default=None, type=str)
 
             # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
             # https://docs.mongoengine.org/guide/text-indexes.html
             # https://stackoverflow.com/questions/1863399/mongodb-is-it-possible-to-make-a-case-insensitive-query
             # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
             cls = get_model(t)
-            docs = cls.objects.search_text(q).limit(limit).skip(offset)
-        
+            if desc is None:
+                docs = cls.objects.search_text(q).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            else:
+                docs = cls.objects.search_text(q).limit(limit).skip(offset).order_by(f"-{sort_by}")
+
         except ValueError:
             return {
                 "error": "query paramter is not valid or got an illegal value",
