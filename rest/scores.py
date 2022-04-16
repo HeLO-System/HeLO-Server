@@ -3,9 +3,11 @@ from flask import request
 from flask_restful import Resource
 from mongoengine import Q
 from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
+from werkzeug.exceptions import BadRequest
 
 from models.score import Score
-from ._common import get_response, handle_error, empty, admin_required
+from schemas.query_schemas import ScoreQuerySchema
+from ._common import get_response, handle_error, empty, admin_required, validate_query
 
 
 class ScoreApi(Resource):
@@ -64,12 +66,13 @@ class ScoresApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
+            validate_query(ScoreQuerySchema(), request.args)
             select = request.args.get("select")
             clan = request.args.get("clan_id")
             match_id = request.args.get("match_id")
             num = request.args.get("num_matches")
-            num_from = request.args.get("num_from")
-            num_to = request.args.get("num_to")
+            num_from = request.args.get("num_matches_from")
+            num_to = request.args.get("num_matches_to")
             score = request.args.get("score")
             score_from = request.args.get("score_from")
             score_to = request.args.get("score_to")
@@ -99,6 +102,9 @@ class ScoresApi(Resource):
             else:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
 
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return {"error": f"cannot resolve field 'select={select}'"}, 400
         except Exception as e:

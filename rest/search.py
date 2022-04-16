@@ -2,10 +2,11 @@
 
 from flask_restful import Resource
 from flask import request
+from werkzeug.exceptions import BadRequest
 
 from logic._getter import get_model
 from schemas.query_schemas import SearchQuerySchema
-from ._common import get_response, validate_query
+from ._common import get_response, validate_query, handle_error
 
 
 class SearchApi(Resource):
@@ -35,6 +36,9 @@ class SearchApi(Resource):
             else:
                 docs = cls.objects.search_text(q).limit(limit).skip(offset).order_by(f"-{sort_by}")
 
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except ValueError:
             return {
                 "error": "query paramter is not valid or got an illegal value",

@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required
 from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
+from werkzeug.exceptions import BadRequest
 
 from models.match import Match
 from schemas.query_schemas import MatchQuerySchema
@@ -150,6 +151,9 @@ class MatchesApi(Resource):
             else:
                 matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
         
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:

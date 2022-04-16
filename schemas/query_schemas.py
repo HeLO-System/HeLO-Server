@@ -4,6 +4,7 @@ import typing
 
 from models.clan import Clan
 from models.match import Match
+from models.score import Score
 
 # example to chain multiple validators:
 # tag = fields.String(validate=And(Length(max=10), OneOf(["name"])))
@@ -35,7 +36,7 @@ class In(Validator):
 
 # Schema for queries on '/clans'
 class ClanQuerySchema(Schema):
-    tag = fields.String(validate=And(Length(max=10)))
+    tag = fields.String(validate=Length(max=10))
     name = fields.String()
     num_matches = fields.Integer(validate=Range(min_inclusive=0))
     score_from = fields.Integer(validate=Range(min_inclusive=0))
@@ -46,6 +47,7 @@ class ClanQuerySchema(Schema):
     select = fields.String(validate=In(Clan.__dict__.keys()))
 
 
+# Schema for queries in '/matches'
 class MatchQuerySchema(Schema):
     select = fields.String(validate=In(Match.__dict__.keys()))
     match_id = fields.String()
@@ -61,7 +63,9 @@ class MatchQuerySchema(Schema):
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
-
+    date = fields.String()
+    date_from = fields.String()
+    date_to = fields.String()
 
 
 # Schema for queries on '/search'
@@ -70,6 +74,22 @@ class SearchQuerySchema(Schema):
     q = fields.String(required=True)
     # type
     type = fields.String(required=True, validate=OneOf(["clan", "match", "score"]))
+    limit = fields.Integer(validate=Range(min_inclusive=0))
+    offset = fields.Integer(validate=Range(min_inclusive=0))
+    sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
+
+
+# Schema for queries in '/scores'
+class ScoreQuerySchema(Schema):
+    select = fields.String(validate=In(Score.__dict__.keys()))
+    clan_id = fields.String()
+    match_id = fields.String()
+    num_matches = fields.Integer(validate=Range(min_inclusive=0))
+    num_matches_from = fields.Integer(validate=Range(min_inclusive=0))
+    num_matches_to = fields.Integer(validate=Range(min_inclusive=0))
+    score = fields.Integer(validate=Range(min_inclusive=0))
+    score_from = fields.Integer(validate=Range(min_inclusive=0))
+    score_to = fields.Integer(validate=Range(min_inclusive=0))
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
