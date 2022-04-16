@@ -48,4 +48,9 @@ class ClanQuerySchema(Schema):
 
 # Schema for queries on '/search'
 class SearchQuerySchema(Schema):
-    pass
+    # query string
+    q = fields.String(required=True)
+    # type
+    type = fields.String(required=True, validate=OneOf(["clan", "match", "score"]))
+    limit = fields.Integer(validate=Range(min_inclusive=0))
+    offset = fields.Integer(validate=Range(min_inclusive=0))
