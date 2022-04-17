@@ -7,7 +7,7 @@ One match results automatically in at least two Score Objects.
 """
 
 import json
-import datetime
+from datetime import datetime
 
 from database.db import db, CustomQuerySet
 
