@@ -1,5 +1,5 @@
 # rest/clans.py
-from flask import request, redirect, abort
+from flask import request, redirect
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
@@ -8,6 +8,7 @@ from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
 from models.clan import Clan
+from models.score import Score
 from schemas.query_schemas import ClanQuerySchema
 from ._common import get_response, handle_error, admin_required, empty, validate_query
 
@@ -146,7 +147,7 @@ class ClansApi(Resource):
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
             else:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-        
+
         except BadRequest as e:
             # TODO: better error response
             return handle_error(f"Bad Request, terminated with: {e}", 400)
@@ -175,3 +176,40 @@ class ClansApi(Resource):
             return handle_error(f"error creating clans in database, terminated with error: {e}", 500)
         else:
             return get_response({"id": str(clan.id)}, 201)
+
+
+class ScoreHistoryApi(Resource):
+
+    def get(self, oid):
+        try:
+            # date in format: YYYY-MM-DD, history from start of HeLO System to 'at'
+            date_at = request.args.get("at")
+            # alternative time range, from - to
+            date_from = request.args.get("from")
+            date_to = request.args.get("to")
+            select = request.args.get("select")
+            desc = request.args.get("desc")
+
+            fields = select.split(",") if select is not None else []
+            filter = Q(clan=oid)
+
+            # specify hour and minute, because otherwise:
+            # 2022-04-01 at 17:32:03 > 2022-04-01 at 00:00:00 (which is the default value)
+            if not empty(date_at):
+                date_at = datetime(*[int(d) for d in date_at.split("-")], hour=23, minute=59)
+                filter &= Q(_created_at__lte=date_at)
+
+            elif not empty(date_from) and not empty(date_to):
+                date_from = datetime(*[int(d) for d in date_from.split("-")], hour=23, minute=59)
+                date_to = datetime(*[int(d) for d in date_to.split("-")], hour=23, minute=59)
+                filter &= (Q(_created_at__gte=date_from) & Q(_created_at__lte=date_to))
+
+            if not empty(desc) and desc:
+                # descending oder
+                scores = Score.objects(filter).only(*fields).order_by("-_created_at")
+                return get_response(scores)
+
+        except:
+            pass
+        else:
+            return get_response(scores)

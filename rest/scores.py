@@ -4,7 +4,6 @@ from flask_restful import Resource
 from mongoengine import Q
 from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
 from werkzeug.exceptions import BadRequest
-import json
 
 from models.score import Score
 from schemas.query_schemas import ScoreQuerySchema
