@@ -98,3 +98,11 @@ class ScoreQuerySchema(Schema):
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
     desc = fields.Boolean()
+
+
+# Schema for queries in '/clan/<oid>/score_history'
+class ScoreHistoryQuerySchema(Schema):
+    start = fields.Date()
+    end = fields.Date()
+    select = fields.String(validate=In(Score.__dict__.keys()))
+    desc = fields.Boolean()
