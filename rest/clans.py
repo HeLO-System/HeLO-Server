@@ -44,8 +44,9 @@ class ClanApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
-            # TODO: validation that request contains all required fields,
-            # otherwise it is no real replace
+            # validation, if request contains all required fields and types
+            clan = Clan(**request.get_json())
+            clan.validate()
             # QuerySet
             clan_qs = Clan.objects(id=oid)
             # can also be upsert_one or update, more important is that we do this on a QuerySet
@@ -56,8 +57,8 @@ class ClanApi(Resource):
 
         except BadRequest:
             return handle_error("Bad Request", 400)
-        except ValidationError:
-                return handle_error("not a valid object id", 400)
+        except ValidationError as e:
+                return handle_error(f"validation failed: {e}", 400)
         except Exception as e:
             return handle_error(f"error updating clan in database, terminated with error: {e}", 500)
         else:

@@ -33,8 +33,9 @@ class MatchApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
-            # TODO: validation that request contains all required fields,
-            # otherwise it is no real replace
+            # validation, if request contains all required fields and types
+            match = Match(**request.get_json())
+            match.validate()
             # must be a QuerySet, therefore no get()
             match_qs = Match.objects(id=oid)
             res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
@@ -49,6 +50,8 @@ class MatchApi(Resource):
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced match with id: {oid}"}, 200)
             
+        except ValidationError as e:
+            return handle_error(f"validation failed: {e}", 400)
         except ValueError:
             return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
         except RuntimeError:
