@@ -4,6 +4,7 @@ first level class
 
 from email.policy import default
 import json
+from random import choices
 
 from numpy import require
 
@@ -20,11 +21,11 @@ class Match(db.Document):
     player_dist1 = db.ListField(db.IntField())
     player_dist2 = db.ListField(db.IntField())
     # allies or axis
-    side1        = db.StringField()
-    side2        = db.StringField()
+    side1        = db.StringField(choices=('Axis', 'Allies'))
+    side2        = db.StringField(choices=('Axis', 'Allies'))
     # strong points hold at the end of the game
-    caps1        = db.IntField(required=True)
-    caps2        = db.IntField(required=True)
+    caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
+    caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
     players      = db.IntField(default=50)
     map          = db.StringField()

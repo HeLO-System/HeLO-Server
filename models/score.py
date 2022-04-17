@@ -7,6 +7,7 @@ One match results automatically in at least two Score Objects.
 """
 
 import json
+import datetime
 
 from database.db import db, CustomQuerySet
 
@@ -19,6 +20,8 @@ class Score(db.Document):
     # is based on, something like "StDb-91.-2022-01-07"
     match_id = db.StringField(required=True)
     score = db.IntField(required=True)
+    # private property, should be readed only
+    _created_at = db.DateTimeField(default=datetime.now())
     # redundant, because with "count" and "clan" we can extract the old score
     # besides when creating the Score object, we don't need to care about
     # double checking whether the score in the corresponding clan object is the same
