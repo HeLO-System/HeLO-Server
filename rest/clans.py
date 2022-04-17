@@ -9,7 +9,7 @@ from datetime import datetime
 
 from models.clan import Clan
 from models.score import Score
-from schemas.query_schemas import ClanQuerySchema
+from schemas.query_schemas import ClanQuerySchema, ScoreHistoryQuerySchema
 from ._common import get_response, handle_error, admin_required, empty, validate_query
 
 # https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
@@ -182,34 +182,38 @@ class ScoreHistoryApi(Resource):
 
     def get(self, oid):
         try:
-            # date in format: YYYY-MM-DD, history from start of HeLO System to 'at'
-            date_at = request.args.get("at")
+            validate_query(ScoreHistoryQuerySchema(), request.args)
+            # date in format: YYYY-MM-DD, history from 'start' to 'end'
             # alternative time range, from - to
-            date_from = request.args.get("from")
-            date_to = request.args.get("to")
+            start = request.args.get("start")
+            end = request.args.get("end")
             select = request.args.get("select")
             desc = request.args.get("desc")
 
             fields = select.split(",") if select is not None else []
             filter = Q(clan=oid)
 
-            # specify hour and minute, because otherwise:
-            # 2022-04-01 at 17:32:03 > 2022-04-01 at 00:00:00 (which is the default value)
-            if not empty(date_at):
-                date_at = datetime(*[int(d) for d in date_at.split("-")], hour=23, minute=59)
-                filter &= Q(_created_at__lte=date_at)
-
-            elif not empty(date_from) and not empty(date_to):
-                date_from = datetime(*[int(d) for d in date_from.split("-")], hour=23, minute=59)
-                date_to = datetime(*[int(d) for d in date_to.split("-")], hour=23, minute=59)
-                filter &= (Q(_created_at__gte=date_from) & Q(_created_at__lte=date_to))
+            if not empty(start):
+                start = datetime(*[int(d) for d in start.split("-")])
+                filter &= Q(_created_at__gte=start)
+            if not empty(end):
+                # specify hour and minute, because otherwise:
+                # 2022-04-01 at 17:32:03 > 2022-04-01 at 00:00:00 (which is the default value)
+                end = datetime(*[int(d) for d in end.split("-")], hour=23, minute=59)
+                filter &= Q(_created_at__lte=end)
 
             if not empty(desc) and desc:
                 # descending oder
                 scores = Score.objects(filter).only(*fields).order_by("-_created_at")
                 return get_response(scores)
+            scores = Score.objects(filter).only(*fields).order_by("+_created_at")
 
-        except:
-            pass
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
+        except LookUpError:
+            return handle_error(f"cannot resolve field 'select={select}'", 400)
+        except Exception as e:
+            return handle_error(f"error getting clans, terminated with error: {e}", 500)
         else:
             return get_response(scores)

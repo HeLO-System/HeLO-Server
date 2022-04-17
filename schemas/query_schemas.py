@@ -65,9 +65,9 @@ class MatchQuerySchema(Schema):
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
-    date = fields.String()
-    date_from = fields.String()
-    date_to = fields.String()
+    date = fields.Date()
+    date_from = fields.Date()
+    date_to = fields.Date()
     desc = fields.Boolean()
 
 
