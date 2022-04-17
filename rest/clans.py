@@ -44,8 +44,31 @@ class ClanApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
+            # validation, if request contains all required fields and types
+            clan = Clan(**request.get_json())
+            clan.validate()
+            # QuerySet
+            clan_qs = Clan.objects(id=oid)
+            # can also be upsert_one or update, more important is that we do this on a QuerySet
+            # and not on a Document
+            res = clan_qs.update_one(upsert=True, last_updated=datetime.now(), **request.get_json(), full_result=True)
+            if res.raw_result.get("updatedExisting"):
+                return get_response({"message": f"replaced clan with id: {oid}"}, 200)
+
+        except BadRequest:
+            return handle_error("Bad Request", 400)
+        except ValidationError as e:
+                return handle_error(f"validation failed: {e}", 400)
+        except Exception as e:
+            return handle_error(f"error updating clan in database, terminated with error: {e}", 500)
+        else:
+            return get_response({"message": f"created clan with id: {oid}"}, 201)
+
+
+    @jwt_required()
+    def patch(self, oid):
+        try:
             clan = Clan.objects.get(id=oid)
-            # todo - validate TODO: was ist mit validate gemeint?
             clan.update(last_updated=datetime.now(), **request.get_json())
 
         except BadRequest:

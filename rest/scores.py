@@ -31,6 +31,25 @@ class ScoreApi(Resource):
     @admin_required()
     def put(self, oid):
         try:
+            # validation, if request contains all required fields and types
+            score = Score(**request.get_json())
+            score.validate()
+            scores_qs = Score.objects(id=oid)        
+            res = scores_qs.update_one(upsert=True, **request.get_json(), full_result=True)
+            if res.raw_result.get("updatedExisting"):
+                return get_response({"message": f"replaced score with id: {oid}"}, 200)
+
+        except ValidationError as e:
+                return handle_error(f"validation failed: {e}", 400)
+        except Exception as e:
+            return handle_error(f"error updating score in database, terminated with error: {e}", 500)
+        else:
+            return get_response({"message": f"created score with id: {oid}"}, 201)
+
+    
+    @admin_required()
+    def patch(self, oid):
+        try:
             scores = Score.objects.get(id=oid)        
             scores.update(**request.get_json())
 
@@ -42,6 +61,7 @@ class ScoreApi(Resource):
             return handle_error(f"error updating score in database, terminated with error: {e}", 500)
         else:
             return "", 204
+
 
     # update scores by object id
     @admin_required()
