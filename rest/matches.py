@@ -33,10 +33,37 @@ class MatchApi(Resource):
     @jwt_required()
     def put(self, oid):
         try:
+            # TODO: validation that request contains all required fields,
+            # otherwise it is no real replace
+            # must be a QuerySet, therefore no get()
+            match_qs = Match.objects(id=oid)
+            res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
+            # load Match object for the logic instead of working with the QuerySet
+            match = Match.objects.get(id=oid)
+            
+            if not match.needs_confirmations() and not match.score_posted:
+                err = calc_scores(match)
+                if err is not None: raise ValueError
+                print("match confirmed")
+
+            if res.raw_result.get("updatedExisting"):
+                return get_response({"message": f"replaced match with id: {oid}"}, 200)
+            
+        except ValueError:
+            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
+        except RuntimeError:
+            return handle_error(f"error updating match - a clan cannot play against itself", 400)
+        else:
+            return get_response({"message": f"created match with id: {oid}"}, 201)
+
+
+    @jwt_required()
+    def patch(self, oid):
+        try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
             match.reload()
-            
+
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
                 if err is not None: raise ValueError
@@ -50,7 +77,7 @@ class MatchApi(Resource):
                 else:
                     start_recalculation(match)
                     print("match and scores recalculated")
-            
+
         except DoesNotExist:
             return handle_error(f"error updating match in database, match not found by oid: {oid}", 404)
         except ValueError:
