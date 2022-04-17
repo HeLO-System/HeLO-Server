@@ -45,6 +45,7 @@ class ClanQuerySchema(Schema):
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
     select = fields.String(validate=In(Clan.__dict__.keys()))
+    desc = fields.Boolean()
 
 
 # Schema for queries in '/matches'
@@ -66,6 +67,7 @@ class MatchQuerySchema(Schema):
     date = fields.String()
     date_from = fields.String()
     date_to = fields.String()
+    desc = fields.Boolean()
 
 
 # Schema for queries on '/search'
@@ -77,6 +79,7 @@ class SearchQuerySchema(Schema):
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
+    desc = fields.Boolean()
 
 
 # Schema for queries in '/scores'
@@ -93,3 +96,4 @@ class ScoreQuerySchema(Schema):
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
+    desc = fields.Boolean()
