@@ -79,7 +79,7 @@ class SearchQuerySchema(Schema):
     type = fields.String(required=True, validate=OneOf(["clan", "match", "score"]))
     limit = fields.Integer(validate=Range(min_inclusive=0))
     offset = fields.Integer(validate=Range(min_inclusive=0))
-    sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
+    sort_by = fields.String(validate=OneOf(["clan", "match_id", "score", "num_matches", "_created_at"]))
     desc = fields.Boolean()
 
 
