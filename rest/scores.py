@@ -4,6 +4,7 @@ from flask_restful import Resource
 from mongoengine import Q
 from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
 from werkzeug.exceptions import BadRequest
+import json
 
 from models.score import Score
 from schemas.query_schemas import ScoreQuerySchema
@@ -32,6 +33,7 @@ class ScoreApi(Resource):
     def put(self, oid):
         try:
             # validation, if request contains all required fields and types
+            if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = Score(**request.get_json())
             score.validate()
             scores_qs = Score.objects(id=oid)        
@@ -138,11 +140,12 @@ class ScoresApi(Resource):
     @admin_required()
     def post(self):
         try:
+            if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = Score(**request.get_json())
             score = score.save()
 
         except ValidationError as e:
-            return handle_error(f"required field is empty: {e}")
+            return handle_error(f"validation failed: {e}", 400)
         except Exception as e:
             return handle_error(f"error creating score in database, terminated with error: {e}", 500)
         else:
