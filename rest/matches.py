@@ -176,10 +176,11 @@ class MatchesApi(Resource):
             if not empty(date_from): filter &= Q(date__gte=date_from)
             if not empty(date_to): filter &= Q(date__lte=date_to)
 
-            if desc is None:
-                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-            else:
+            if not empty(desc) and desc:
                 matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                return get_response(matches)
+
+            matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
         
         except BadRequest as e:
             # TODO: better error response

@@ -60,6 +60,9 @@ def _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1
 
             else:
                 clan.update(score=score, last_updated=datetime.now(), inc__num_matches=1)
+                # set creation time of score object only if the score is new
+                # why is this necessary? update_one does not check whether the given fields match the required formats
+                score_queryset.update_one(set___created_at=datetime.now())
 
                 if recalculate:
                     # +1, because the num_matches is before the score has been calculated

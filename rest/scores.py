@@ -32,6 +32,7 @@ class ScoreApi(Resource):
     def put(self, oid):
         try:
             # validation, if request contains all required fields and types
+            if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = Score(**request.get_json())
             score.validate()
             scores_qs = Score.objects(id=oid)        
@@ -117,10 +118,11 @@ class ScoresApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
             
-            if desc is None:
-                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-            else:
+            if not empty(desc) and desc:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                return get_response(scores)
+
+            scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
 
         except BadRequest as e:
             # TODO: better error response
@@ -138,11 +140,12 @@ class ScoresApi(Resource):
     @admin_required()
     def post(self):
         try:
+            if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = Score(**request.get_json())
             score = score.save()
 
         except ValidationError as e:
-            return handle_error(f"required field is empty: {e}")
+            return handle_error(f"validation failed: {e}", 400)
         except Exception as e:
             return handle_error(f"error creating score in database, terminated with error: {e}", 500)
         else:

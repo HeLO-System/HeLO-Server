@@ -1,5 +1,5 @@
 # rest/clans.py
-from flask import request, redirect, abort
+from flask import request, redirect
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required
 from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
@@ -8,7 +8,8 @@ from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
 from models.clan import Clan
-from schemas.query_schemas import ClanQuerySchema
+from models.score import Score
+from schemas.query_schemas import ClanQuerySchema, ScoreHistoryQuerySchema
 from ._common import get_response, handle_error, admin_required, empty, validate_query
 
 # https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
@@ -142,11 +143,12 @@ class ClansApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
             
-            if desc is None:
-                clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-            else:
+            if not empty(desc) and desc:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-        
+                return get_response(clans)
+            
+            clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+
         except BadRequest as e:
             # TODO: better error response
             return handle_error(f"Bad Request, terminated with: {e}", 400)
@@ -175,3 +177,44 @@ class ClansApi(Resource):
             return handle_error(f"error creating clans in database, terminated with error: {e}", 500)
         else:
             return get_response({"id": str(clan.id)}, 201)
+
+
+class ScoreHistoryApi(Resource):
+
+    def get(self, oid):
+        try:
+            validate_query(ScoreHistoryQuerySchema(), request.args)
+            # date in format: YYYY-MM-DD, history from 'start' to 'end'
+            # alternative time range, from - to
+            start = request.args.get("start")
+            end = request.args.get("end")
+            select = request.args.get("select")
+            desc = request.args.get("desc")
+
+            fields = select.split(",") if select is not None else []
+            filter = Q(clan=oid)
+
+            if not empty(start):
+                start = datetime(*[int(d) for d in start.split("-")])
+                filter &= Q(_created_at__gte=start)
+            if not empty(end):
+                # specify hour and minute, because otherwise:
+                # 2022-04-01 at 17:32:03 > 2022-04-01 at 00:00:00 (which is the default value)
+                end = datetime(*[int(d) for d in end.split("-")], hour=23, minute=59)
+                filter &= Q(_created_at__lte=end)
+
+            if not empty(desc) and desc:
+                # descending oder
+                scores = Score.objects(filter).only(*fields).order_by("-_created_at")
+                return get_response(scores)
+            scores = Score.objects(filter).only(*fields).order_by("+_created_at")
+
+        except BadRequest as e:
+            # TODO: better error response
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
+        except LookUpError:
+            return handle_error(f"cannot resolve field 'select={select}'", 400)
+        except Exception as e:
+            return handle_error(f"error getting clans, terminated with error: {e}", 500)
+        else:
+            return get_response(scores)
