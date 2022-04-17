@@ -143,10 +143,11 @@ class ClansApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
             
-            if desc is None:
-                clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-            else:
+            if not empty(desc) and desc:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                return get_response(clans)
+            
+            clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
 
         except BadRequest as e:
             # TODO: better error response

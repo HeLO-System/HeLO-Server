@@ -118,10 +118,11 @@ class ScoresApi(Resource):
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
             
-            if desc is None:
-                scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-            else:
+            if not empty(desc) and desc:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                return get_response(scores)
+
+            scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
 
         except BadRequest as e:
             # TODO: better error response
