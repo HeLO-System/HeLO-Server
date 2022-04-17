@@ -45,6 +45,7 @@ class ClanQuerySchema(Schema):
     offset = fields.Integer(validate=Range(min_inclusive=0))
     sort_by = fields.String(validate=OneOf(["tag", "name", "score", "num_matches"]))
     select = fields.String(validate=In(Clan.__dict__.keys()))
+    # TODO: make this better
     desc = fields.Boolean()
 
 
