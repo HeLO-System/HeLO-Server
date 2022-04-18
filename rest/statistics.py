@@ -7,13 +7,15 @@ from mongoengine.queryset.visitor import Q
 
 from models.clan import Clan
 from models.match import Match
-from ._common import get_response, handle_error, admin_required, empty, validate_query
+from schemas.query_schemas import WinrateQuerySchema
+from ._common import get_response, handle_error, empty, validate_query
 
 
 class WinrateApi(Resource):
 
     def get(self, oid):
         try:
+            validate_query(WinrateQuerySchema(), request.args)
             # for winrate per map
             map = request.args.get("map")
             # for winrate per side, allowed values: Axis, Allies
@@ -69,4 +71,3 @@ class WinrateApi(Resource):
                 "wins": wins,
                 "winrate": round(wins / total, 3)
             })
-            
