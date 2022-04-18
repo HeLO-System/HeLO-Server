@@ -16,20 +16,40 @@ class WinrateApi(Resource):
         try:
             # for winrate per map
             map = request.args.get("map")
+            # for winrate per side, allowed values: Axis, Allies
+            side = request.args.get("side")
 
             clan = Clan.objects.get(id=oid)
             # get all matches where the clan was either on side1 and caps1 > caps2 (condition 1)
             # or on side2 and caps1 < caps2 (condition 2)
-            cond1 = Q(clans1_ids=str(clan.id)) & Q(caps1__gte=3)
-            cond2 = Q(clans2_ids=str(clan.id)) & Q(caps2__gte=3)
+            win_cond1 = Q(clans1_ids=str(clan.id)) & Q(caps1__gte=3)
+            win_cond2 = Q(clans2_ids=str(clan.id)) & Q(caps2__gte=3)
 
-            if not empty(map):
-                total = Match.objects((Q(clans1_ids=str(clan.id)) | Q(clans2_ids=str(clan.id))) & Q(map__iexact=map)).count()
-                wins = Match.objects((cond1 | cond2) & Q(map__iexact=map)).count()
-                print(total)
+            # if a side has been specified, the clan id must be on that side
+            side_cond1 = Q(clans1_ids=str(clan.id)) & Q(side1__iexact=side)
+            side_cond2 = Q(clans2_ids=str(clan.id)) & Q(side2__iexact=side)
+
+            # only map is specified
+            if not empty(map) and empty(side):
+                total = Match.objects((Q(clans1_ids=str(clan.id)) | Q(clans2_ids=str(clan.id)))
+                                        & Q(map__iexact=map)).count()
+                wins = Match.objects((win_cond1 | win_cond2) & Q(map__iexact=map)).count()
+
+            # only side is specified
+            elif not empty(side) and empty(map):
+                total = Match.objects(side_cond1 | side_cond2).count()
+                wins = Match.objects((win_cond1 | win_cond2) & (side_cond1 | side_cond2)).count()
+
+            # map and side are specified
+            elif not empty(map) and not empty(side):
+                total = Match.objects((side_cond1 | side_cond2) & Q(map__iexact=map)).count()
+                wins = Match.objects((win_cond1 | win_cond2) & (side_cond1 | side_cond2)
+                                    & Q(map__iexact=map)).count()
+
+            # neither map nor side is specified, user requested general winrate
             else:
                 total = clan.num_matches
-                wins = Match.objects((cond1 | cond2)).count()
+                wins = Match.objects((win_cond1 |win_cond2)).count()
             
             return get_response({
                 "total": total,
