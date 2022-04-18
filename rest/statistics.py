@@ -76,23 +76,92 @@ class WinrateApi(Resource):
 class VictoryTypeApi(Resource):
 
     def get(self, oid):
-        # only the given victory types will be returned
-        only = request.args.get("only")
+        map = request.args.get("map")
+        side = request.args.get("side")
 
         clan = Clan.objects.get(id=oid)
 
-        # get all matches where the clan was either on side1 and caps1 > caps2 (condition 1)
-        # or on side2 and caps1 < caps2 (condition 2)
-        win_cond1 = Q(clans1_ids=str(clan.id)) & Q(caps1__gte=3)
-        win_cond2 = Q(clans2_ids=str(clan.id)) & Q(caps2__gte=3)
-        wins = Match.objects((win_cond1 | win_cond2)).count()
+        # if a side has been specified, the clan id must be on that side
+        side_cond1 = Q(clans1_ids=str(clan.id)) & Q(side1__iexact=side)
+        side_cond2 = Q(clans2_ids=str(clan.id)) & Q(side2__iexact=side)
 
-        # 5-0 victories
-        vic_5 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
-                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
-        # 4-1 victories
-        vic_4 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
-                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
-        # 3-2 victories
-        vic_3 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
-                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
+        # only map is specified
+        if not empty(map) and empty(side):
+            # 5-0 victories
+            vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
+                                    & Q(map__iexact=map)).count()
+            # 4-1 victories
+            vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
+                                    & Q(map__iexact=map)).count()
+            # 3-2 victories
+            vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
+                                    & Q(map__iexact=map)).count()
+
+        # only side is specified
+        elif not empty(side) and empty(map):
+            # 5-0 victories
+            vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
+                                    & (side_cond1 | side_cond2)).count()
+            # 4-1 victories
+            vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
+                                    & (side_cond1 | side_cond2)).count()
+            # 3-2 victories
+            vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
+                                    & (side_cond1 | side_cond2)).count()
+
+        # map and side are specified
+        elif not empty(map) and not empty(side):
+            # 5-0 victories
+            vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
+                                    & (side_cond1 | side_cond2)
+                                    & Q(map__iexact=map)).count()
+            # 4-1 victories
+            vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
+                                    & (side_cond1 | side_cond2)
+                                    & Q(map__iexact=map)).count()
+            # 3-2 victories
+            vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
+                                    & (side_cond1 | side_cond2)
+                                    & Q(map__iexact=map)).count()
+
+        # neither map nor side is specified, user requested general winrate
+        else:
+            # 5-0 victories
+            vic_5 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=5))
+                                    ).count()
+            # 4-1 victories
+            vic_4 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=4))
+                                    ).count()
+            # 3-2 victories
+            vic_3 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                    | (Q(clans2_ids=str(clan.id)) & Q(caps2=3))
+                                    ).count()
+
+        total = vic_3 + vic_4 + vic_5
+        if total == 0: total = 1    # to avoid multiple zero division errors
+        
+        return get_response({
+            "5-0": {
+                "count": vic_5,
+                "share": vic_5 / total
+            },
+            "4-1": {
+                "count": vic_4,
+                "share": vic_4 / total
+            },
+            "3-2": {
+                "count": vic_3,
+                "share": vic_3 / total
+            }
+        })
