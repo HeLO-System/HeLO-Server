@@ -1,8 +1,8 @@
 # rest/statistics.py
-from this import d
 from flask import request
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required
+from marshmallow import ValidationError
+from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 
 from models.clan import Clan
@@ -50,12 +50,6 @@ class WinrateApi(Resource):
             else:
                 total = clan.num_matches
                 wins = Match.objects((win_cond1 |win_cond2)).count()
-            
-            return get_response({
-                "total": total,
-                "wins": wins,
-                "winrate": round(wins / total, 3)
-            })
 
         except ZeroDivisionError:
             return get_response({
@@ -63,3 +57,16 @@ class WinrateApi(Resource):
                 "wins": 0,
                 "winrate": 0
             })
+        except ValidationError as e:
+            return handle_error(f"validation failed: {e}", 400)
+        except BadRequest as e:
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
+        except Exception as e:
+            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+        else:
+            return get_response({
+                "total": total,
+                "wins": wins,
+                "winrate": round(wins / total, 3)
+            })
+            
