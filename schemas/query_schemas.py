@@ -114,6 +114,6 @@ class ScoreHistoryQuerySchema(Schema):
 
 
 # Schema for queries in '/statistics/winrate/{oid}'
-class WinrateQuerySchema(Schema):
+class StatisticsQuerySchema(Schema):
     map = fields.String()
     side = fields.String(validate=validate_side)
