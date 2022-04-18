@@ -51,7 +51,7 @@ class WinrateApi(Resource):
             # neither map nor side is specified, user requested general winrate
             else:
                 total = clan.num_matches
-                wins = Match.objects((win_cond1 |win_cond2)).count()
+                wins = Match.objects((win_cond1 | win_cond2)).count()
 
         except ZeroDivisionError:
             return get_response({
@@ -71,3 +71,28 @@ class WinrateApi(Resource):
                 "wins": wins,
                 "winrate": round(wins / total, 3)
             })
+
+
+class VictoryTypeApi(Resource):
+
+    def get(self, oid):
+        # only the given victory types will be returned
+        only = request.args.get("only")
+
+        clan = Clan.objects.get(id=oid)
+
+        # get all matches where the clan was either on side1 and caps1 > caps2 (condition 1)
+        # or on side2 and caps1 < caps2 (condition 2)
+        win_cond1 = Q(clans1_ids=str(clan.id)) & Q(caps1__gte=3)
+        win_cond2 = Q(clans2_ids=str(clan.id)) & Q(caps2__gte=3)
+        wins = Match.objects((win_cond1 | win_cond2)).count()
+
+        # 5-0 victories
+        vic_5 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
+        # 4-1 victories
+        vic_4 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
+        # 3-2 victories
+        vic_3 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
