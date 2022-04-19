@@ -32,7 +32,7 @@ pyparsing==3.0.8
 pytz==2021.3
 requests==2.26.0
 six==1.16.0
-urllib3==1.26.7
+urllib3==1.26.9
 virtualenv==20.14.1
 Werkzeug==2.0.2
 WTForms==3.0.0
