@@ -3,7 +3,7 @@ bcrypt==3.2.0
 certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.7
-click==8.0.3
+click==8.1.2
 colorama==0.4.4
 distlib==0.3.4
 dnspython==2.1.0
