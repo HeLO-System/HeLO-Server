@@ -26,7 +26,7 @@ class Clan(db.Document):
     # alternative tags, if a clan was renamed, reserved
     alt_tags = db.ListField(db.StringField())
     # link to the icon of a clan
-    icon = db.StringField(default="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_189144.png&f=1&nofb=1")
+    icon = db.StringField()
     # when the clan was last updated (e.g. the score)
     last_updated = db.DateTimeField(default=datetime.now())
     meta = {
