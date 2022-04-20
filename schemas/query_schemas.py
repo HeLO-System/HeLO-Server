@@ -1,5 +1,5 @@
 from marshmallow import Schema, ValidationError, fields
-from marshmallow.validate import OneOf, Length, And, Range, Validator
+from marshmallow.validate import OneOf, Length, And, Range, Regexp, Validator, Predicate
 import typing
 
 from models.clan import Clan
@@ -32,6 +32,11 @@ class In(Validator):
             raise ValidationError(self._format_error(faulty_value)) from e
         return value
     
+
+def validate_side(x: str):
+    if x.casefold() in ("axis", "allies"):
+        return True
+    raise ValidationError("Invalid value. Must be one of ('axis', 'allies')")
         
 
 # Schema for queries on '/clans'
@@ -106,3 +111,9 @@ class ScoreHistoryQuerySchema(Schema):
     end = fields.Date()
     select = fields.String(validate=In(Score.__dict__.keys()))
     desc = fields.Boolean()
+
+
+# Schema for queries in '/statistics/winrate/{oid}'
+class StatisticsQuerySchema(Schema):
+    map = fields.String()
+    side = fields.String(validate=validate_side)

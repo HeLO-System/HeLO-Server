@@ -6,6 +6,7 @@ from rest.users import SignupApi, LoginApi, UserApi, UsersApi
 from rest.clans import ClansApi, ClanApi, ScoreHistoryApi
 from rest.scores import ScoreApi, ScoresApi
 from rest.matches import MatchApi, MatchesApi
+from rest.statistics import WinrateApi, VictoryTypeApi
 
 
 def initialize_routes(api):
@@ -24,3 +25,5 @@ def initialize_routes(api):
     api.add_resource(ScoreApi, '/score/<oid>')
     api.add_resource(SimulationsApi, '/simulations')
     api.add_resource(SearchApi, '/search')
+    api.add_resource(WinrateApi, '/statistics/winrate/<oid>')
+    api.add_resource(VictoryTypeApi, '/statistics/victory_type/<oid>')
