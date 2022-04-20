@@ -53,6 +53,12 @@ class WinrateApi(Resource):
                 total = clan.num_matches
                 wins = Match.objects((win_cond1 | win_cond2)).count()
 
+            return get_response({
+                "total": total,
+                "wins": wins,
+                "winrate": round(wins / total, 3)
+            })
+
         except ZeroDivisionError:
             return get_response({
                 "total": 0,
@@ -65,12 +71,6 @@ class WinrateApi(Resource):
             return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
-        else:
-            return get_response({
-                "total": total,
-                "wins": wins,
-                "winrate": round(wins / total, 3)
-            })
 
 
 class VictoryTypeApi(Resource):
