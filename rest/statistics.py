@@ -70,10 +70,10 @@ class WinrateApi(Resource):
         except BadRequest as e:
             return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
 
 
-class VictoryTypeApi(Resource):
+class ResultTypesApi(Resource):
 
     def get(self, oid):
         try:
@@ -89,70 +89,37 @@ class VictoryTypeApi(Resource):
             side_cond1 = Q(clans1_ids=str(clan.id)) & Q(side1__iexact=side)
             side_cond2 = Q(clans2_ids=str(clan.id)) & Q(side2__iexact=side)
 
-            # only map is specified
-            if not empty(map) and empty(side):
-                # 5-0 victories
-                vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
+            filter = Q()
+
+            if not empty(map): filter &= Q(map__iexact=map)
+            if not empty(side): filter &= (side_cond1 | side_cond2)
+
+            # 5-0 victories
+            vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
                                         | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
-                                        & Q(map__iexact=map)).count()
-                # 4-1 victories
-                vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
+                                        & filter).count()
+            # 4-1 victories
+            vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
                                         | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
-                                        & Q(map__iexact=map)).count()
-                # 3-2 victories
-                vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
+                                        & filter).count()
+            # 3-2 victories
+            vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
                                         | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
-                                        & Q(map__iexact=map)).count()
-
-            # only side is specified
-            elif not empty(side) and empty(map):
-                # 5-0 victories
-                vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
-                                        & (side_cond1 | side_cond2)).count()
-                # 4-1 victories
-                vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
-                                        & (side_cond1 | side_cond2)).count()
-                # 3-2 victories
-                vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
-                                        & (side_cond1 | side_cond2)).count()
-
-            # map and side are specified
-            elif not empty(map) and not empty(side):
-                # 5-0 victories
-                vic_5 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=5)))
-                                        & (side_cond1 | side_cond2)
-                                        & Q(map__iexact=map)).count()
-                # 4-1 victories
-                vic_4 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=4)))
-                                        & (side_cond1 | side_cond2)
-                                        & Q(map__iexact=map)).count()
-                # 3-2 victories
-                vic_3 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=3)))
-                                        & (side_cond1 | side_cond2)
-                                        & Q(map__iexact=map)).count()
-
-            # neither map nor side is specified, user requested general winrate
-            else:
-                # 5-0 victories
-                vic_5 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=5))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=5))
-                                        ).count()
-                # 4-1 victories
-                vic_4 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=4))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=4))
-                                        ).count()
-                # 3-2 victories
-                vic_3 = Match.objects((Q(clans1_ids=str(clan.id)) & Q(caps1=3))
-                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=3))
-                                        ).count()
-
-            total = vic_3 + vic_4 + vic_5
+                                        & filter).count()
+            # 2-3 defeats
+            def_2 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=2))
+                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=2)))
+                                        & filter).count()
+            # 1-4 defeats
+            def_1 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=1))
+                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=1)))
+                                        & filter).count()
+            # 0-5 defeats
+            def_0 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=0))
+                                        | (Q(clans2_ids=str(clan.id)) & Q(caps2=0)))
+                                        & filter).count()
+            
+            total = def_0 + def_1 + def_2 + vic_3 + vic_4 + vic_5
             if total == 0: total = 1    # to avoid multiple zero division errors
                     
         except ValidationError as e:
@@ -160,7 +127,7 @@ class VictoryTypeApi(Resource):
         except BadRequest as e:
             return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
         else:
             return get_response({
                 "5-0": {
@@ -174,5 +141,17 @@ class VictoryTypeApi(Resource):
                 "3-2": {
                     "count": vic_3,
                     "share": round(vic_3 / total, 3)
+                },
+                "2-3": {
+                    "count": def_2,
+                    "share": round(def_2 / total, 3)
+                },
+                "1-4": {
+                    "count": def_1,
+                    "share": round(def_1 / total, 3)
+                },
+                "0-5": {
+                    "count": def_0,
+                    "share": round(def_0 / total, 3)
                 }
             })
