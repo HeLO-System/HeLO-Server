@@ -70,10 +70,10 @@ class WinrateApi(Resource):
         except BadRequest as e:
             return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
 
 
-class VictoryTypeApi(Resource):
+class ResultTypesApi(Resource):
 
     def get(self, oid):
         try:
@@ -160,7 +160,7 @@ class VictoryTypeApi(Resource):
         except BadRequest as e:
             return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
         else:
             return get_response({
                 "5-0": {
