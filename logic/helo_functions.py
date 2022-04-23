@@ -87,18 +87,31 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
     # regardless of its number of games
     a = 40
 
+    weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
+    weights2 = np.ones(len(clan_scores2)) / len(clan_scores2)
+    print(weights1)
+
     # convert player distributions to numpy arrays and normalize
-    try:
-        # performs weighted average
+    print(player_dist1)
+    print(bool(player_dist1))
+    if player_dist1:
         weights1 = np.array(player_dist1) / sum(player_dist1)
-        weights2 = np.array(player_dist2) / sum(player_dist2)
         num_players = sum(player_dist1)
-    except TypeError:
-        # performs normal average
-        weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
-        weights2 = np.ones(len(clan_scores2)) / len(clan_scores2)
+    if player_dist2:
+        weights2 = np.array(player_dist2) / sum(player_dist2)
+    # try:
+    #     # performs weighted average
+    #     print(player_dist1)
+    #     weights1 = np.array(player_dist1) / sum(player_dist1)
+    #     weights2 = np.array(player_dist2) / sum(player_dist2)
+    #     num_players = sum(player_dist1)
+    # except TypeError:
+    #     # performs normal average
+    #     weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
+    #     weights2 = np.ones(len(clan_scores2)) / len(clan_scores2)
 
     # calculate the (weighted) average score of the cooperations
+    print(weights1)
     avg1 = np.average(clan_scores1, weights=weights1)
     avg2 = np.average(clan_scores2, weights=weights2)
 
