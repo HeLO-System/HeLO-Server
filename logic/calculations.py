@@ -20,7 +20,7 @@ def calc_scores(match: Match, scores1=None, num_matches1=None, scores2=None, num
             num_matches1, num_matches2 = [[clan.num_matches for clan in clans1], [clan.num_matches for clan in clans2]]
 
         if set(clans1) & set(clans2):
-            # a clan cannot play against itmatch
+            # a clan cannot play against itself
             raise RuntimeError
 
         # check if it is a coop game or a normal game
@@ -63,7 +63,9 @@ def _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1
                 clan.update(score=score, last_updated=datetime.now(), inc__num_matches=1)
                 # set creation time of score object only if the score is new
                 # why is this necessary? update_one does not check whether the given fields match the required formats
-                score_queryset.update_one(set___created_at=datetime.now())
+                # TODO: should be equal to the date of match
+                # score_queryset.update_one(set___created_at=datetime.now())
+                score_queryset.update_one(set___created_at=match.date)
 
                 if recalculate:
                     # +1, because the num_matches is before the score has been calculated

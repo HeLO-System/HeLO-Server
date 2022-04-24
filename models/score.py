@@ -21,6 +21,7 @@ class Score(db.Document):
     match_id = db.StringField(required=True)
     score = db.IntField(required=True)
     # private property, should be readed only
+    # TODO: implement real protection
     _created_at = db.DateTimeField(default=datetime.now())
     # redundant, because with "count" and "clan" we can extract the old score
     # besides when creating the Score object, we don't need to care about

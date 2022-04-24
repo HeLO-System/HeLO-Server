@@ -43,6 +43,9 @@ def get_by_clan_id(match: Match, clan_id: str):
         matches.sort(key=lambda x: x.date, reverse=True)
         # if there is no match at all, return default score object with 600
         try:
+            # TODO: BUG: match on same date will result in an endless loop, because
+            # if both matches have no score object in DB, they will return each other over
+            # and over again!!
             return get_by_clan_id(matches[0], clan_id)
         except IndexError:
             return Score(clan_id, 0, "DefaultScore", 600)
