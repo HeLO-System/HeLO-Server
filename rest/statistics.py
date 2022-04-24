@@ -159,7 +159,7 @@ class ResultTypesApi(Resource):
 
 
 
-class AverageStrengthApi(Resource):
+class PerformanceRatingApi(Resource):
 
     def get(self, oid):
         try:
@@ -174,9 +174,18 @@ class AverageStrengthApi(Resource):
             for match in matches_side2:
                 scores = [Clan.objects.get(id=clan_id).score for clan_id in match.clans1_ids]
                 strengths.append(sum(scores)/len(scores))
+
+            # get all matches where the clan was either on side1 and caps1 > caps2 (condition 1)
+            # or on side2 and caps1 < caps2 (condition 2)
+            win_cond1 = Q(clans1_ids=str(clan.id)) & Q(caps1__gte=3)
+            win_cond2 = Q(clans2_ids=str(clan.id)) & Q(caps2__gte=3)
+
+            total = clan.num_matches
+            wins = Match.objects(win_cond1 | win_cond2).count()
+
+            pr = (sum(strengths) + 400 * (wins - (total - wins))) / total
             
-            #return get_response({"avg_strength": round(np.average(strengths), 2)})
-            return get_response({"avg_strength": sum(strengths)})
+            return get_response({"pr": round(pr, 2)})
                 
-        except:
-            pass
+        except Exception as e:
+            print(e)
