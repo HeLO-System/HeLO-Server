@@ -4,6 +4,7 @@ from flask_restful import Resource
 from marshmallow import ValidationError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
+import numpy as np
 
 from models.clan import Clan
 from models.match import Match
@@ -155,3 +156,27 @@ class ResultTypesApi(Resource):
                     "share": round(def_0 / total, 3)
                 }
             })
+
+
+
+class AverageStrengthApi(Resource):
+
+    def get(self, oid):
+        try:
+            clan = Clan.objects.get(id=oid)
+            matches_side1 = Match.objects(Q(clans1_ids=str(clan.id)))
+            matches_side2 = Match.objects(Q(clans2_ids=str(clan.id)))
+
+            strengths = []
+            for match in matches_side1:
+                scores = [Clan.objects.get(id=clan_id).score for clan_id in match.clans2_ids]
+                strengths.append(np.average(scores))
+            for match in matches_side2:
+                scores = [Clan.objects.get(id=clan_id).score for clan_id in match.clans1_ids]
+                strengths.append(sum(scores)/len(scores))
+            
+            #return get_response({"avg_strength": round(np.average(strengths), 2)})
+            return get_response({"avg_strength": sum(strengths)})
+                
+        except:
+            pass
