@@ -202,6 +202,14 @@ class MatchesApi(Resource):
             need_conf = match.needs_confirmations() # just to remind the user
             # a match will always need at least the confirmation of the other team
             # therefore, there is no point of creating the scores within the POST method
+
+            # temporary
+            claims = get_jwt()
+            if not match.needs_confirmations() and not match.score_posted and claims["is_admin"]:
+                err = calc_scores(match)
+                if err is not None: raise ValueError
+                print("match confirmed")
+
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
         except ValidationError as e:
