@@ -19,12 +19,17 @@ class MatchApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            match = Match.objects.get(id=oid)
-            return get_response(match)
-        except ValidationError:
-            return handle_error("not a valid object id", 400)
+            try:
+                match = Match.objects.get(id=oid)
+                return get_response(match)
+            except ValidationError:
+                match = Match.objects.search_text(oid).first()
+                return get_response(match)
+
+        except AttributeError:
+            return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.", 400)
         except DoesNotExist:
-                return handle_error("object does not exist", 404)
+            return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
         
