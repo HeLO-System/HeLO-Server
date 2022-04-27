@@ -187,5 +187,9 @@ class PerformanceRatingApi(Resource):
             
             return get_response({"pr": round(pr, 2)})
                 
+        except ValidationError as e:
+            return handle_error(f"validation failed: {e}", 400)
+        except BadRequest as e:
+            return handle_error(f"Bad Request, terminated with: {e}", 400)
         except Exception as e:
-            print(e)
+            return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
