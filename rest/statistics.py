@@ -22,11 +22,21 @@ class Statistics(Resource):
 
             # use aggregation pipeline here
             pipeline = [
-                {"$group": {"map": "$map", "total": {"$sum": 1}}}
+                {"$group": 
+                    {"_id": "$map",
+                    "total": {"$sum": 1},
+                    "winsallies":
+                        {"caps1": {
+                            "$gte": 3
+                            }
+                        }
+                    }
+                }
             ]
-            sme = Match.objects().aggregate(pipeline)
+            docs = Match.objects().aggregate(pipeline)
 
-            print(sme)
+            for doc in docs:
+                print(doc)
 
         except Exception as e:
             print(e)
