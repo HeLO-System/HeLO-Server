@@ -12,6 +12,27 @@ from schemas.query_schemas import StatisticsQuerySchema
 from ._common import get_response, handle_error, empty, validate_query
 
 
+
+class Statistics(Resource):
+
+    def get(self):
+        try:
+            # get all confirmed or recalculated matches
+            matches = Match.objects((Q(conf1__exists=True) & Q(conf2__exists=True)) | Q(recalculate__exists=True))
+
+            # use aggregation pipeline here
+            pipeline = [
+                {"$group": {"map": "$map", "total": {"$sum": 1}}}
+            ]
+            sme = Match.objects().aggregate(pipeline)
+
+            print(sme)
+
+        except Exception as e:
+            print(e)
+
+
+
 class WinrateApi(Resource):
 
     def get(self, oid):
