@@ -55,7 +55,7 @@ def admin_required():
     return wrapper
 
 
-def validate_query(schema, args):
+def validate_schema(schema, args):
     errors = schema.validate(args)
     if errors: abort(400, str(errors))
 

@@ -49,13 +49,13 @@ def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, nu
         # calculate the probabilities for the teams
         prob1, prob2 = get_win_prob(score1, score2)
         # check if points don't exceed maximum points, which are possible in HLL
-        assert caps1 + caps2 <= 5
+        assert 4 < caps1 + caps2 <= 5
         # calulate the new HeLO scores
         score1_new = score1 + a1 * float(c) * (math.log(number_of_players/50, a1) + 1) * float(caps1 / 5 - prob1)
         score2_new = score2 + a2 * float(c) * (math.log(number_of_players/50, a2) + 1) * float(caps2 / 5 - prob2)
         return round(score1_new), round(score2_new), None
     except AssertionError:
-        return None, None, "Sum of points in score must be less or equal to 5"
+        return None, None, "Sum of points in score must be between 4 and 5"
 
 
 def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
@@ -107,9 +107,8 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
 
     score1, score2, err = get_new_scores(avg1, avg2, caps1, caps2,
                                         c=c, number_of_players=num_players)
+    if err is not None: return None, None, err
     gain1, gain2 = score1 - avg1, score2 - avg2
-
-    print(gain1, gain2)
 
     # share the gain depending on the player distribution
     # if there is no player distribution, share equally

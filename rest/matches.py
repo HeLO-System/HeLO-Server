@@ -11,7 +11,7 @@ from models.match import Match
 from schemas.query_schemas import MatchQuerySchema
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
-from ._common import get_response, handle_error, get_jwt, empty, validate_query
+from ._common import get_response, handle_error, get_jwt, empty, validate_schema
 
 
 class MatchApi(Resource):
@@ -118,7 +118,7 @@ class MatchesApi(Resource):
     # get all or filtered by match id
     def get(self):
         try:
-            validate_query(MatchQuerySchema(), request.args)
+            validate_schema(MatchQuerySchema(), request.args)
             # select grenzt angefragte Felder ein, z.B. select=match_id kommt nur
             # die match_id zurück, nciht das ganze Objekt aus der DB
             select = request.args.get("select")
@@ -214,7 +214,7 @@ class MatchesApi(Resource):
                 err = calc_scores(match)
                 if err is not None: raise ValueError
                 print("match confirmed")
-
+                
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
         except ValidationError as e:

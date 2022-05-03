@@ -6,14 +6,14 @@ from werkzeug.exceptions import BadRequest
 
 from logic._getter import get_model
 from schemas.query_schemas import SearchQuerySchema
-from ._common import get_response, validate_query, handle_error
+from ._common import get_response, validate_schema, handle_error
 
 
 class SearchApi(Resource):
 
     def get(self):
         try:
-            validate_query(SearchQuerySchema(), request.args)
+            validate_schema(SearchQuerySchema(), request.args)
             # example: '/search?q=core&type=match
             # query string, keyword to look for
             q = request.args.get("q")
