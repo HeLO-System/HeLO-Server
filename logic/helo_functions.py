@@ -109,8 +109,6 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
                                         c=c, number_of_players=num_players)
     gain1, gain2 = score1 - avg1, score2 - avg2
 
-    print(gain1, gain2)
-
     # share the gain depending on the player distribution
     # if there is no player distribution, share equally
     # cs = clan score, part = partial share according to the distribution
