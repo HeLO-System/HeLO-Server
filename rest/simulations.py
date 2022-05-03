@@ -53,9 +53,10 @@ class SimulationsApi(Resource):
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
 
-            # TODO: idea: new score, old score and difference like {"CoRe": {"old": 920, "new": 915, "diff": -5}}
-            clans1_mapped = {clan.tag : new_score for clan, new_score in zip(clans1, new_scores1)}
-            clans2_mapped = {clan.tag : new_score for clan, new_score in zip(clans2, new_scores2)}
+            clans1_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
+                            for clan, new_score in zip(clans1, new_scores1)}
+            clans2_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
+                            for clan, new_score in zip(clans2, new_scores2)}
             return get_response({
                 "side1": clans1_mapped,
                 "side2": clans2_mapped
