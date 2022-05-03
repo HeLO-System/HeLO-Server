@@ -28,21 +28,26 @@ class SimulationsApi(Resource):
             clans1 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans1_ids")]
             clans2 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans2_ids")]
 
+            # competitive factor, if provided
+            c = 1 if request.get_json().get("factor") is None else request.get_json().get("factor")
+            # number of players, if provided
+            players = 50 if request.get_json().get("players") is None else request.get_json().get("players")
+
             # coop game
             if len(clans1) > 1 or len(clans2) > 1:
-                # TODO: add factor and number of players via queries
                 new_scores1, new_scores2, err = get_coop_scores(
                     clan_scores1=[clan.score for clan in clans1],
                     clan_scores2=[clan.score for clan in clans2],
                     caps1=request.get_json().get("caps1"),
                     caps2=request.get_json().get("caps2"),
                     player_dist1=request.get_json().get("player_dist1"),
-                    player_dist2=request.get_json().get("player_dist2")
+                    player_dist2=request.get_json().get("player_dist2"),
+                    c=c,
+                    num_players=players
                     )
             
             # no coop game
             else:
-                # TODO: add factor and number of players via queries
                 new_scores1, new_scores2, err = get_new_scores(
                     score1=clans1[0].score,
                     score2=clans2[0].score,
@@ -50,6 +55,8 @@ class SimulationsApi(Resource):
                     caps2=request.get_json().get("caps2"),
                     matches1=clans1[0].num_matches,
                     matches2=clans2[0].num_matches,
+                    c=c,
+                    number_of_players=players
                     )
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
