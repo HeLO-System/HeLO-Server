@@ -9,14 +9,14 @@ import numpy as np
 from models.clan import Clan
 from models.match import Match
 from schemas.query_schemas import StatisticsQuerySchema
-from ._common import get_response, handle_error, empty, validate_query
+from ._common import get_response, handle_error, empty, validate_schema
 
 
 class WinrateApi(Resource):
 
     def get(self, oid):
         try:
-            validate_query(StatisticsQuerySchema(), request.args)
+            validate_schema(StatisticsQuerySchema(), request.args)
             # for winrate per map
             map = request.args.get("map")
             # for winrate per side, allowed values: Axis, Allies
@@ -78,7 +78,7 @@ class ResultTypesApi(Resource):
 
     def get(self, oid):
         try:
-            validate_query(StatisticsQuerySchema(), request.args)
+            validate_schema(StatisticsQuerySchema(), request.args)
             # for winrate per map
             map = request.args.get("map")
             # for winrate per side, allowed values: Axis, Allies

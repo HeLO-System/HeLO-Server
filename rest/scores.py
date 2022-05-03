@@ -7,7 +7,7 @@ from werkzeug.exceptions import BadRequest
 
 from models.score import Score
 from schemas.query_schemas import ScoreQuerySchema
-from ._common import get_response, handle_error, empty, admin_required, validate_query
+from ._common import get_response, handle_error, empty, admin_required, validate_schema
 
 
 class ScoreApi(Resource):
@@ -87,7 +87,7 @@ class ScoresApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
-            validate_query(ScoreQuerySchema(), request.args)
+            validate_schema(ScoreQuerySchema(), request.args)
             select = request.args.get("select")
             clan = request.args.get("clan_id")
             match_id = request.args.get("match_id")

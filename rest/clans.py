@@ -10,7 +10,7 @@ from datetime import datetime
 from models.clan import Clan
 from models.score import Score
 from schemas.query_schemas import ClanQuerySchema, ScoreHistoryQuerySchema
-from ._common import get_response, handle_error, admin_required, empty, validate_query
+from ._common import get_response, handle_error, admin_required, empty, validate_schema
 
 # https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
 # https://www.programcreek.com/python/example/108223/marshmallow.validate.OneOf
@@ -30,7 +30,6 @@ class ClanApi(Resource):
                 # causes problems in frontend, removed for the time being
                 # name = "-".join(clan.name.split())
                 # return redirect('/clan/' + name)
-                return get_response(clan)
             except ValidationError:
                 clan = Clan.objects.search_text(oid).first()
                 return get_response(clan)
@@ -111,7 +110,7 @@ class ClansApi(Resource):
     # get all or filtered by clan tag
     def get(self):
         try:
-            validate_query(ClanQuerySchema(), request.args)
+            validate_schema(ClanQuerySchema(), request.args)
             # optional, clan tag
             tag = request.args.get("tag")
             # optional, full name
@@ -185,7 +184,7 @@ class ScoreHistoryApi(Resource):
 
     def get(self, oid):
         try:
-            validate_query(ScoreHistoryQuerySchema(), request.args)
+            validate_schema(ScoreHistoryQuerySchema(), request.args)
             # date in format: YYYY-MM-DD, history from 'start' to 'end'
             # alternative time range, from - to
             start = request.args.get("start")
