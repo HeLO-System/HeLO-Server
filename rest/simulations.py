@@ -9,15 +9,6 @@ from models.clan import Clan
 from schemas.request_schemas import SimulationsSchema
 from ._common import get_response, handle_error, validate_schema
 
-# helper for getting data for the clan name in the given input parameter
-# def get_score_for_arg(arg):   
-#     clan : Clan = Clan.objects(clan=request.args.get(arg))
-#     scores = Score.objects(clan=clan.id).order_by('-count').only("score").first()
-#     if scores == None: 
-#         return clan.tag, None, f"Error retrieving score for clan: {clan.tag}"
-        
-#     return clan.tag, scores.score, None
-
 
 class SimulationsApi(Resource):
     
@@ -25,6 +16,7 @@ class SimulationsApi(Resource):
         try:
             validate_schema(SimulationsSchema(), request.get_json())
 
+            # get clans by their provided ids
             clans1 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans1_ids")]
             clans2 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans2_ids")]
 
@@ -63,6 +55,8 @@ class SimulationsApi(Resource):
 
             if err is not None: raise BadRequest("calculation failed due to logical reasons, please check your input")
 
+            # create a dictionary with the new score and difference for every clan
+            # on both sides
             clans1_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
                             for clan, new_score in zip(clans1, new_scores1)}
             clans2_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
