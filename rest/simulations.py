@@ -61,6 +61,8 @@ class SimulationsApi(Resource):
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
 
+            if err is not None: raise BadRequest("calculation failed due to logical reasons, please check your input")
+
             clans1_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
                             for clan, new_score in zip(clans1, new_scores1)}
             clans2_mapped = {clan.tag : {"new_score": new_score, "difference": new_score -  clan.score}
