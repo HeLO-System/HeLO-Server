@@ -29,6 +29,10 @@ class Clan(db.Document):
     icon = db.StringField()
     # when the clan was last updated (e.g. the score)
     last_updated = db.DateTimeField(default=datetime.now())
+    # indicates if a clan has played less than 3 matches in 2 months
+    inactive = db.BooleanField()
+    # indicates if a clan has been inactive for 4 months
+    archived = db.BooleanField()
     meta = {
         "indexes": [
             {
