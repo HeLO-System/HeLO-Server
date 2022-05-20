@@ -27,7 +27,7 @@ class Match(db.Document):
     caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
-    players      = db.IntField(default=50)
+    players      = db.IntField()
     map          = db.StringField(required=True)
     date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
