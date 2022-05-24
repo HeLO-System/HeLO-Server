@@ -38,7 +38,9 @@ def calc_scores(match: Match, scores1=None, num_matches1=None, scores2=None, num
                                                             match.caps2, match.factor,
                                                             match.player_dist1,
                                                             match.player_dist2,
-                                                            match.players)
+                                                            match.players,
+                                                            num_matches1=num_matches1,
+                                                            num_matches2=num_matches2)
 
         _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1, num_matches2, recalculate=recalculate)
         match.score_posted = True
