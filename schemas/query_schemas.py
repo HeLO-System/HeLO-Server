@@ -117,3 +117,6 @@ class ScoreHistoryQuerySchema(Schema):
 class StatisticsQuerySchema(Schema):
     map = fields.String()
     side = fields.String(validate=validate_side)
+
+class SimulationsQuerySchema(Schema):
+    ignore_factors = fields.Boolean()
