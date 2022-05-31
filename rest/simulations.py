@@ -7,6 +7,7 @@ from mongoengine.errors import ValidationError, DoesNotExist
 from logic.helo_functions import get_new_scores, get_coop_scores
 from models.clan import Clan
 from schemas.request_schemas import SimulationsSchema
+from schemas.query_schemas import SimulationsQuerySchema
 from ._common import get_response, handle_error, validate_schema
 
 
@@ -14,7 +15,10 @@ class SimulationsApi(Resource):
     
     def get(self):
         try:
+            # validate request schema
             validate_schema(SimulationsSchema(), request.get_json())
+            # validate query schema
+            validate_schema(SimulationsQuerySchema(), request.args)
 
             # get clans by their provided ids
             clans1 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans1_ids")]
