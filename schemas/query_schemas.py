@@ -119,4 +119,4 @@ class StatisticsQuerySchema(Schema):
     side = fields.String(validate=validate_side)
 
 class SimulationsQuerySchema(Schema):
-    ignore_factors = fields.Boolean()
+    ignore = fields.String(validate=In(["factor", "num_matches", "players"]))
