@@ -59,7 +59,8 @@ def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, nu
 
 
 def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
-                    player_dist1: list = None, player_dist2: list = None, num_players: int = 50):
+                    player_dist1: list = None, player_dist2: list = None, num_players: int = 50,
+                    num_matches1: list = None, num_matches2: list = None):
     """Calculates the scores for games with more than one clan on one (or both) side(s).
     If a player distribution is given, the score will be calculated based on a weighted
     average. Otherwise a normal average will be calculated.
@@ -76,16 +77,23 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
                                         Defaults to None.
         num_players (list, optional): total number of players, only necessary if no player
                                         distribution was given
+        num_matches1 (list, optional): list of number of matches for side 1
+        num_matches2 (list, optional): list of number of matches for side 2
 
     Returns:
-        list, list, str: list of the new HeLO scores for every team (coop1, coop2), error message
+        list, list: list of the new HeLO scores for every team (coop1, coop2)
     """
     # note: amount factor (a) will be ignored here, default is 40
     # otherwise, these kind of games won't generate a significant score
     # TODO: known issue: a coop game is also a game where only one clan plays against
     # two or more clans, therefore the clan playing alone will be weighted with a = 40
     # regardless of its number of games
-    a = 40
+    a1, a2 = 40, 40
+    # temporary fix: if there is a clan in the cooperation with > 30 games, take 20
+    if num_matches1 is not None:
+        a1 = min([40 if num <= 30 else 20 for num in num_matches1])
+    if num_matches2 is not None:
+        a2 = min([40 if num <= 30 else 20 for num in num_matches2])
 
     # performs normal average
     weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
@@ -106,7 +114,8 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
     avg2 = np.average(clan_scores2, weights=weights2)
 
     score1, score2, err = get_new_scores(avg1, avg2, caps1, caps2,
-                                        c=c, number_of_players=num_players)
+                                        c=c, number_of_players=num_players,
+                                        matches1=a1, matches2=a2)
     if err is not None: return None, None, err
     gain1, gain2 = score1 - avg1, score2 - avg2
 
