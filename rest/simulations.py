@@ -19,6 +19,8 @@ class SimulationsApi(Resource):
             validate_schema(SimulationsSchema(), request.get_json())
             # validate query schema
             validate_schema(SimulationsQuerySchema(), request.args)
+            ignore = request.args.get("ignore")
+            ignore = ignore.split(",") if ignore is not None else []
 
             # get clans by their provided ids
             clans1 = [Clan.objects.get(id=clan_id) for clan_id in request.get_json().get("clans1_ids")]
@@ -38,8 +40,8 @@ class SimulationsApi(Resource):
                     caps2=request.get_json().get("caps2"),
                     player_dist1=request.get_json().get("player_dist1"),
                     player_dist2=request.get_json().get("player_dist2"),
-                    c=c,
-                    num_players=players
+                    c=c if "factor" not in ignore else 1,
+                    num_players=players if "players" not in ignore else 50
                     )
             
             # no coop game
@@ -49,10 +51,10 @@ class SimulationsApi(Resource):
                     score2=clans2[0].score,
                     caps1=request.get_json().get("caps1"),
                     caps2=request.get_json().get("caps2"),
-                    matches1=clans1[0].num_matches,
-                    matches2=clans2[0].num_matches,
-                    c=c,
-                    number_of_players=players
+                    matches1=clans1[0].num_matches if "num_matches" not in ignore else 0,
+                    matches2=clans2[0].num_matches if "num_matches" not in ignore else 0,
+                    c=c if "factor" not in ignore else 1,
+                    number_of_players=players if "players" not in ignore else 50
                     )
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
