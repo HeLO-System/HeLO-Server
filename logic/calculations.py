@@ -21,7 +21,7 @@ def calc_scores(match: Match, scores1=None, num_matches1=None, scores2=None, num
 
         if set(clans1) & set(clans2):
             # a clan cannot play against itself
-            raise RuntimeError
+            raise RuntimeError("A clan cannot play against itself.")
 
         # check if it is a coop game or a normal game
         if len(match.clans1_ids) == 1 and len(match.clans2_ids) == 1:
