@@ -26,7 +26,7 @@ def get_win_prob(score1, score2):
         return round(1 - prob, 3), prob
 
 
-def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, number_of_players=50):
+def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=2, number_of_players=50):
     """Calculates the new HeLO score based on a given game score.
 
     Args:
@@ -58,7 +58,7 @@ def get_new_scores(score1, score2, caps1, caps2, matches1=0, matches2=0, c=1, nu
         return None, None, "Sum of points in score must be between 4 and 5"
 
 
-def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
+def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 2,
                     player_dist1: list = None, player_dist2: list = None, num_players: int = 50,
                     num_matches1: list = None, num_matches2: list = None):
     """Calculates the scores for games with more than one clan on one (or both) side(s).
