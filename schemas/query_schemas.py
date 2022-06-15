@@ -52,6 +52,7 @@ class ClanQuerySchema(Schema):
     select = fields.String(validate=In(Clan.__dict__.keys()))
     # TODO: make this better
     desc = fields.Boolean()
+    archived = fields.Boolean()
 
 
 # Schema for queries in '/matches'

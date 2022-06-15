@@ -132,6 +132,8 @@ class ClansApi(Resource):
             # optional, narrows the return to selected fields
             # should be a comma separated list
             select = request.args.get("select")
+            # optional, whether archived clans should be included in the response
+            archived = request.args.get("archived", default=None)
 
             fields = select.split(",") if select is not None else []
 
@@ -144,6 +146,7 @@ class ClansApi(Resource):
             if not empty(num): filter &= Q(num_matches=num)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_to)
+            if empty(archived) and not archived: filter &= Q(archived=archived)
             
             if not empty(desc) and desc:
                 clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
