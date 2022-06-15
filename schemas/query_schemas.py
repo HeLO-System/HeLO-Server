@@ -65,7 +65,7 @@ class MatchQuerySchema(Schema):
     map = fields.String()
     duration_from = fields.Integer(validate=Range(min=8, max=90, min_inclusive=True, max_inclusive=True))
     duration_to = fields.Integer(validate=Range(min=8, max=90, min_inclusive=True, max_inclusive=True))
-    factor = fields.Float(validate=OneOf([0.5, 0.8, 1.0, 1.2]))
+    factor = fields.Float(validate=OneOf([0.3, 0.6, 2.0, 2.4]))
     conf = fields.String()
     event = fields.String()
     limit = fields.Integer(validate=Range(min=0, min_inclusive=True))
