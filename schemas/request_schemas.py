@@ -10,4 +10,4 @@ class SimulationsSchema(Schema):
     player_dist1 = fields.List(fields.Integer(validate=Range(min=0, max=50, min_inclusive=True, max_inclusive=True)))
     player_dist2 = fields.List(fields.Integer(validate=Range(min=0, max=50, min_inclusive=True, max_inclusive=True)))
     players = fields.Integer(validate=Range(min=3, max=50, max_inclusive=True))
-    factor = fields.Float(validate=OneOf([0.5, 0.8, 1.0, 1.2]))
+    factor = fields.Float(validate=OneOf([0.3, 0.6, 2.0, 2.4]))
