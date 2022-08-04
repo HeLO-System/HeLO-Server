@@ -62,6 +62,8 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                                 match.caps2, match.factor,
                                                                 match.player_dist1,
                                                                 match.player_dist2,
+                                                                num_matches1,
+                                                                num_matches2,
                                                                 **match.get_console_settings())
         
 
