@@ -27,7 +27,10 @@ class ConsoleMatch(db.Document):
     caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
-    players      = db.IntField()
+    players1      = db.IntField() # n1
+    players2      = db.IntField() # n2
+    randoms1      = db.IntField() # t1
+    randoms2      = db.IntField() # t2    
     map          = db.StringField(required=True)
     date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
@@ -68,3 +71,14 @@ class ConsoleMatch(db.Document):
 
     def to_dict(self):
         return json.loads(self.to_json())
+
+
+    def get_console_settings(self):
+        return {
+            "n1": self.players1,
+            "n2": self.players2,
+            "t1": self.randoms1,
+            "t2": self.randoms2,
+            "N": self.players1 + self.players2,
+            "T": self.randoms1 + self.randoms2
+        }
