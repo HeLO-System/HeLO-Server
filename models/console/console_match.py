@@ -80,5 +80,5 @@ class ConsoleMatch(db.Document):
             "t1": self.randoms1,
             "t2": self.randoms2,
             "N": self.players1 + self.players2,
-            "T": self.randoms1 + self.randoms2
+            "T": self.randoms1 + self.randoms2 + self.players1 + self.players2
         }
