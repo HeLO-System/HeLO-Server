@@ -151,6 +151,7 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
         t2 (int, optional): total number of players in the team2 (including random players). Defaults to 50.
         N (int, optional): number of clan players on the server, N <= T. Defaults to 100.
         T (int, optional): total number of players on the server (including random players). Defaults to 100.
+        offensive (bool, optional): offensive mode or warfare, Default is False
     """
     try:
         # determine the K factor by the number of games played
@@ -204,12 +205,13 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
                                         Defaults to None.
         num_matches1 (list, optional): list of number of matches for side 1
         num_matches2 (list, optional): list of number of matches for side 2
-        n1 (int, optional): number of clan players in team1, n <= t. Defaults to 50.
+        n1 (list, optional): number of clan players in team1, n <= t. Defaults to 50.
         t1 (int, optional): total number of players in the team1 (including random players). Defaults to 50.
-        n2 (int, optional): number of clan players in team2, n <= t. Defaults to 50.
+        n2 (list, optional): number of clan players in team2, n <= t. Defaults to 50.
         t2 (int, optional): total number of players in the team2 (including random players). Defaults to 50.
         N (int, optional): number of clan players on the server, N <= T. Defaults to 100.
         T (int, optional): total number of players on the server (including random players). Defaults to 100.
+        offensive (bool, optional): offensive mode or warfare, Default is False
     """
     # find the max value of number of matches and take this to compute the team's K factor
     max1 = max(num_matches1)
@@ -223,10 +225,11 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
     if player_dist1:
         # performs weighted average later
         weights1 = np.array(player_dist1) / sum(player_dist1)
+        n1 = sum(player_dist1)
     if player_dist2:
         # performs weighted average later
         weights2 = np.array(player_dist2) / sum(player_dist2)
-        #num_players = sum(player_dist2)
+        n2 = sum(player_dist2)
 
     # calculate the (weighted) average score of the cooperations
     avg1 = np.average(clan_scores1, weights=weights1)
