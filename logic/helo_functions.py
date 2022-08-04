@@ -247,6 +247,3 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
 
     return clan_scores1, clan_scores2, err
 
-
-print(get_console_coop_scores([610], [723], 0, 5, 1, num_matches1=[13], num_matches2=[27],
-                            n1=45, n2=39))
