@@ -42,7 +42,7 @@ def start_recalculation(match, console=False):
             # then we do not have to make database calls
             scores1, num_matches1 = zip(*[_get_score_and_num_matches(m, clan, console) for clan in clans1])
             scores2, num_matches2 = zip(*[_get_score_and_num_matches(m, clan, console) for clan in clans2])
-            err = calc_scores(m, scores1, num_matches1, scores2, num_matches2, recalculate=True)
+            err = calc_scores(m, scores1, num_matches1, scores2, num_matches2, recalculate=True, console=console)
             print(err, "match:", m.match_id)
 
         match.recalculate = False
