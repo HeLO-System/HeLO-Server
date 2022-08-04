@@ -10,7 +10,8 @@ from rest.scores import ScoreApi, ScoresApi,\
                     ConsoleScoreApi, ConsoleScoresApi
 from rest.matches import MatchApi, MatchesApi,\
                     ConsoleMatchApi, ConsoleMatchesApi
-from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi
+from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi,\
+                    ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
 
 
 def initialize_routes(api):
@@ -41,3 +42,6 @@ def initialize_routes(api):
     api.add_resource(ConsoleScoresApi, '/console/scores')
     api.add_resource(ConsoleScoreApi, '/console/score/<oid>')
     api.add_resource(ConsoleSimulationsApi, '/console/simulations')
+    api.add_resource(ConsoleWinrateApi, '/console/statistics/winrate/<oid>')
+    api.add_resource(ConsoleResultTypesApi, '/console/statistics/result_types/<oid>')
+    api.add_resource(ConsolePerformanceRatingApi, '/console/statistics/pr/<oid>')
