@@ -15,17 +15,7 @@ from ._getter import get_clan_objects
 
 
 def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matches2=None,
-                recalculate=False, console=False, console_settings=None):
-        """
-        console_setting should look like this:
-        {
-            "n1": x,
-            "t1": x,
-            "n2": ...
-        }
-        n1 and n2 must be listlike for console coop matches
-        """
-
+                recalculate=False, console=False):
         clans1, clans2 = get_clan_objects(match)
         # hier nihct aus clan, sondern letztes Match object (vor diesem nehmen)
         # z.b. über datum
@@ -64,7 +54,7 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                             num_matches1[0],
                                                             num_matches2[0],
                                                             match.factor,
-                                                            **console_settings)
+                                                            **match.get_console_settings())
                 # for compatibility reasons
                 scores1, scores2 = [score1], [score2]
             else:
@@ -72,7 +62,7 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                                 match.caps2, match.factor,
                                                                 match.player_dist1,
                                                                 match.player_dist2,
-                                                                **console_settings)
+                                                                **match.get_console_settings())
         
 
         _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1,
