@@ -5,7 +5,8 @@ Score Calculation and Database Interactions
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
-from logic.helo_functions import get_new_scores, get_coop_scores
+from logic.helo_functions import get_new_scores, get_coop_scores,\
+                            get_new_console_scores, get_console_coop_scores
 from models.match import Match
 from models.score import Score
 from models.console.console_match import ConsoleMatch
@@ -14,7 +15,17 @@ from ._getter import get_clan_objects
 
 
 def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matches2=None,
-                recalculate=False, console=False):
+                recalculate=False, console=False, console_settings=None):
+        """
+        console_setting should look like this:
+        {
+            "n1": x,
+            "t1": x,
+            "n2": ...
+        }
+        n1 and n2 must be listlike for console coop matches
+        """
+
         clans1, clans2 = get_clan_objects(match)
         # hier nihct aus clan, sondern letztes Match object (vor diesem nehmen)
         # z.b. über datum
@@ -47,8 +58,22 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                                 num_matches2=num_matches2)
         
         else:
-            # TODO: console computations
-            pass
+            if len(match.clans1_ids) == 1 and len(match.clans2_ids) == 1:
+                score1, score2, err = get_new_console_scores(scores1[0], scores2[0],
+                                                            match.caps1, match.caps2,
+                                                            num_matches1[0],
+                                                            num_matches2[0],
+                                                            match.factor,
+                                                            **console_settings)
+                # for compatibility reasons
+                scores1, scores2 = [score1], [score2]
+            else:
+                scores1, scores2, err = get_console_coop_scores(scores1, scores2, match.caps1,
+                                                                match.caps2, match.factor,
+                                                                match.player_dist1,
+                                                                match.player_dist2,
+                                                                **console_settings)
+        
 
         _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1,
                                 num_matches2, recalculate=recalculate, console=console)
