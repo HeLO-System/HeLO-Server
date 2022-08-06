@@ -75,6 +75,7 @@ class MatchQuerySchema(Schema):
     date_from = fields.Date()
     date_to = fields.Date()
     desc = fields.Boolean()
+    side = fields.String(validate=OneOf(["Allies", "Axis"]))
 
 
 # Schema for queries on '/search'
