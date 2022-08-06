@@ -181,6 +181,8 @@ class MatchesApi(Resource):
                     cond1 = Q(clans1_ids=str(clan_ids[0])) & Q(side1__iexact=side)
                     cond2 = Q(clans2_ids=str(clan_ids[0])) & Q(side2__iexact=side)
                     filter &= (cond1 | cond2)
+                else:
+                    raise BadRequest("missing clan id")
 
             if not empty(date): filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
