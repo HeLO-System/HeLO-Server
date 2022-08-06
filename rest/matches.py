@@ -135,6 +135,7 @@ class MatchesApi(Resource):
             factor = request.args.get("factor")
             conf = request.args.get("conf")
             event = request.args.get("event")
+            side = request.args.get("side")
 
             # optional, quality of life query parameters
             limit = request.args.get("limit", default=0, type=int)
@@ -174,6 +175,7 @@ class MatchesApi(Resource):
             if not empty(factor): filter &= Q(factor=factor)
             if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
             if not empty(event): filter &= Q(event__icontains=event)
+            if not empty(side): filter &= (Q(side1=side) | Q(side2=side))
 
             if not empty(date): filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
