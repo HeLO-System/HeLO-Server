@@ -176,7 +176,7 @@ class MatchesApi(Resource):
             if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
             if not empty(event): filter &= Q(event__icontains=event)
             if not empty(side):
-                if not empty(clan_ids):
+                if len(clan_ids) > 0:
                     # if a side has been specified, the clan id must be on that side
                     cond1 = Q(clans1_ids=str(clan_ids[0])) & Q(side1__iexact=side)
                     cond2 = Q(clans2_ids=str(clan_ids[0])) & Q(side2__iexact=side)
