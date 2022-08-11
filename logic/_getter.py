@@ -8,14 +8,21 @@ from mongoengine.errors import DoesNotExist
 from models.clan import Clan
 from models.match import Match
 from models.score import Score
+from models.console.console_clan import ConsoleClan
+from models.console.console_match import ConsoleMatch
+from models.console.console_score import ConsoleScore
 
-def get_clan_objects(match: Match):
-    clans1 = [Clan.objects.get(id=oid) for oid in match.clans1_ids]
-    clans2 = [Clan.objects.get(id=oid) for oid in match.clans2_ids]
+def get_clan_objects(match):
+    if isinstance(match, Match):
+        clan_obj = Clan
+    else:
+        clan_obj = ConsoleClan
+    clans1 = [clan_obj.objects.get(id=oid) for oid in match.clans1_ids]
+    clans2 = [clan_obj.objects.get(id=oid) for oid in match.clans2_ids]
     return clans1, clans2
 
 
-def get_by_clan_id(match: Match, clan_id: str):
+def get_by_clan_id(match, clan_id: str):
     """Returns a Score object that matches a specific match_id and clan_id.
 
     Args:
@@ -25,13 +32,19 @@ def get_by_clan_id(match: Match, clan_id: str):
     Returns:
         Score: Score matching the query
     """
+    if isinstance(match, Match):
+        score_obj = Score
+        match_obj = Match
+    else:
+        score_obj = ConsoleScore
+        match_obj = ConsoleMatch
     try:
-        return Score.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
+        return score_obj.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
     # if the match haven't been confirmed, there won't be a matching Score object
     # in this case, find the last (before the given one) match by date
     except DoesNotExist:
         matches = []
-        for m in Match.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
+        for m in match_obj.objects(Q(date__lte=match.date) & (Q(clans1_ids__in=[clan_id]) | (Q(clans2_ids__in=[clan_id])))):
             # discard the match itself, but we need 'lte' in case there is
             # another match on this day
             if m.match_id == match.match_id:
@@ -48,10 +61,10 @@ def get_by_clan_id(match: Match, clan_id: str):
             # and over again!!
             return get_by_clan_id(matches[0], clan_id)
         except IndexError:
-            return Score(clan_id, 0, "DefaultScore", 600)
+            return score_obj(clan_id, 0, "DefaultScore", 600)
 
 
-def get_by_num_matches(clan_id: str, num_matches: int):
+def get_by_num_matches(clan_id: str, num_matches: int, console=False):
     """Returns a Score object that matches a specific clan_id and number of matches.
 
     Args:
@@ -61,13 +74,17 @@ def get_by_num_matches(clan_id: str, num_matches: int):
     Returns:
         Score: Score matching the query
     """
+    if not console:
+        score_obj = Score
+    else:
+        score_obj = ConsoleScore
     try:
-        return Score.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
+        return score_obj.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
     except DoesNotExist:
-        return Score(clan_id, 0, "DefaultScore", 600)
+        return score_obj(clan_id, 0, "DefaultScore", 600)
 
 
-def get_model(t: str):
+def get_model(t: str, console=False):
     """Returns the database model for a specific type keyword.
 
     Args:
@@ -79,11 +96,21 @@ def get_model(t: str):
     Returns:
         cls: model class from the database
     """
-    if t == "clan":
-        return Clan
-    elif t == "match":
-        return Match
-    elif t == "score":
-        return Score
+    if not console:
+        if t == "clan":
+            return Clan
+        elif t == "match":
+            return Match
+        elif t == "score":
+            return Score
+        else:
+            raise ValueError
     else:
-        raise ValueError
+        if t == "clan":
+            return ConsoleClan
+        elif t == "match":
+            return ConsoleMatch
+        elif t == "score":
+            return ConsoleScore
+        else:
+            raise ValueError

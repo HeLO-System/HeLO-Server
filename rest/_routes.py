@@ -1,12 +1,17 @@
 # rest/routes.py
 from rest.events import EventApi, EventsApi
 from rest.search import SearchApi
-from rest.simulations import SimulationsApi
+from rest.simulations import SimulationsApi,\
+                            ConsoleSimulationsApi
 from rest.users import SignupApi, LoginApi, UserApi, UsersApi
-from rest.clans import ClansApi, ClanApi, ScoreHistoryApi
-from rest.scores import ScoreApi, ScoresApi
-from rest.matches import MatchApi, MatchesApi
-from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi
+from rest.clans import ClansApi, ClanApi, ScoreHistoryApi,\
+                    ConsoleClanApi, ConsoleClansApi, ConsoleScoreHistoryApi
+from rest.scores import ScoreApi, ScoresApi,\
+                    ConsoleScoreApi, ConsoleScoresApi
+from rest.matches import MatchApi, MatchesApi,\
+                    ConsoleMatchApi, ConsoleMatchesApi
+from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi,\
+                    ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
 
 
 def initialize_routes(api):
@@ -28,3 +33,15 @@ def initialize_routes(api):
     api.add_resource(WinrateApi, '/statistics/winrate/<oid>')
     api.add_resource(ResultTypesApi, '/statistics/result_types/<oid>')
     api.add_resource(PerformanceRatingApi, '/statistics/pr/<oid>')
+    # console
+    api.add_resource(ConsoleClanApi, '/console/clan/<oid>')
+    api.add_resource(ConsoleClansApi, '/console/clans')
+    api.add_resource(ConsoleScoreHistoryApi, '/console/clan/<oid>/score_history')
+    api.add_resource(ConsoleMatchApi, '/console/match/<oid>')
+    api.add_resource(ConsoleMatchesApi, '/console/matches')
+    api.add_resource(ConsoleScoresApi, '/console/scores')
+    api.add_resource(ConsoleScoreApi, '/console/score/<oid>')
+    api.add_resource(ConsoleSimulationsApi, '/console/simulations')
+    api.add_resource(ConsoleWinrateApi, '/console/statistics/winrate/<oid>')
+    api.add_resource(ConsoleResultTypesApi, '/console/statistics/result_types/<oid>')
+    api.add_resource(ConsolePerformanceRatingApi, '/console/statistics/pr/<oid>')

@@ -119,6 +119,7 @@ class ScoreHistoryQuerySchema(Schema):
 class StatisticsQuerySchema(Schema):
     map = fields.String()
     side = fields.String(validate=validate_side)
+    as_img = fields.Boolean() # only for console
 
 class SimulationsQuerySchema(Schema):
     ignore = fields.String(validate=In(["factor", "num_matches", "players"]))
