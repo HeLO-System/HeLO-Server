@@ -48,6 +48,8 @@ class Match(db.Document):
     # reserved for admins, necessary to start a recalculate process for this match
     # will be set only temporarily
     recalculate = db.BooleanField()
+    # url to the stream of the match
+    stream_url = db.StringField()
     meta = {
         "indexes": [
             {
