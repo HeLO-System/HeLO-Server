@@ -281,27 +281,10 @@ class ConsoleWinrateApi(Resource):
                 wins = ConsoleMatch.objects((win_cond1 | win_cond2)).count()
 
             if as_img and total > 0:
-                # plt.figure()
-                # def func(pct, allvalues): 
-                #     absolute = int(pct / 100.*np.sum(allvalues)) 
-                #     return "{:.1f}%\n({:d})".format(pct, absolute)
-                # plt.pie([wins, total-wins], labels=("victories", "defeats"), autopct=lambda pct: func(pct, [wins, total-wins]))
-                # plt.legend(loc="upper right")
-                # plt.title(f"Winrate of {clan.tag}, map: {map}, side: {side}")
                 plt = _plot((wins, total-wins), ptype="pie", labels=("victories", "defeats"), clantag=clan.tag, m=map, side=side)
-                # buf = io.BytesIO()
-                # # https://stackoverflow.com/questions/57316491/how-to-convert-matplotlib-figure-to-pil-image-object-without-saving-image
-                # # https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
-                # plt.savefig(buf, format="png")
-                # buf.seek(0)
-                # im = PIL.Image.open(buf)
-                # # https://jdhao.github.io/2019/07/06/python_opencv_pil_image_to_bytes/
-                # buf = io.BytesIO()
-                # im.save(buf, format="png")
-                # byte_im = buf.getvalue()
                 byte_im = _plot_to_byteimg(plt)
                 img = ConsoleImage(image=byte_im)
-                # save store by not storing the image
+                # save storage by not storing the image
                 #img.save()
                 return send_file(img.image, "image/png")
 
