@@ -33,6 +33,8 @@ class Clan(db.Document):
     inactive = db.BooleanField()
     # indicates if a clan has been inactive for 4 months
     archived = db.BooleanField()
+    # discord role id of the clan
+    role_id = db.StringField()
     meta = {
         "indexes": [
             {
