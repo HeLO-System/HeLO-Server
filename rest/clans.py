@@ -231,6 +231,22 @@ class ScoreHistoryApi(Resource):
             return get_response(scores)
 
 
+class DiscordRoleApi(Resource):
+
+    # rid = role id
+    def get(self, rid):
+        try:
+            clan = Clan.objects.get(role_id=rid)
+            return get_response(clan)
+
+        except DoesNotExist:
+                return handle_error("object does not exist", 404)
+        except Exception as e:
+            return handle_error(f"error getting clan from database, clan not found by oid: {rid}, terminated with error: {e}", 500)
+
+
+
+
 
 
 ###############################################

@@ -12,6 +12,7 @@ from rest.matches import MatchApi, MatchesApi,\
                     ConsoleMatchApi, ConsoleMatchesApi
 from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi,\
                     ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
+from rest.clans import DiscordRoleApi
 
 
 def initialize_routes(api):
@@ -33,6 +34,7 @@ def initialize_routes(api):
     api.add_resource(WinrateApi, '/statistics/winrate/<oid>')
     api.add_resource(ResultTypesApi, '/statistics/result_types/<oid>')
     api.add_resource(PerformanceRatingApi, '/statistics/pr/<oid>')
+    api.add_resource(DiscordRoleApi, '/role_id/<rid>')
     # console
     api.add_resource(ConsoleClanApi, '/console/clan/<oid>')
     api.add_resource(ConsoleClansApi, '/console/clans')
