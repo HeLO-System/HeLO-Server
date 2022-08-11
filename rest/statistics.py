@@ -1,15 +1,20 @@
 # rest/statistics.py
-from flask import request
+from flask import request, redirect
+from flask import send_file
 from flask_restful import Resource
 from marshmallow import ValidationError
 from werkzeug.exceptions import BadRequest
 from mongoengine.queryset.visitor import Q
 import numpy as np
+import matplotlib.pyplot as plt
+import io
+import PIL
 
 from models.clan import Clan
 from models.console.console_clan import ConsoleClan
 from models.match import Match
 from models.console.console_match import ConsoleMatch
+from models.console.console_image import ConsoleImage
 from schemas.query_schemas import StatisticsQuerySchema
 from ._common import get_response, handle_error, empty, validate_schema
 
@@ -206,6 +211,31 @@ class PerformanceRatingApi(Resource):
 #                CONSOLE APIs                 #
 ###############################################
 
+
+def _plot(x, y=None, ptype="pie", labels=None, clantag=None, m=None, side=None, colors=None):
+    if ptype == "pie":
+        plt.figure()
+        def func(pct, allvalues): 
+            absolute = int(pct / 100.*np.sum(allvalues)) 
+            return "{:.1f}%\n({:d})".format(pct, absolute)
+        plt.pie(x, labels=labels, autopct=lambda pct: func(pct, x), colors=colors)
+        plt.legend(loc="upper right")
+        plt.title(f"Winrate of {clantag}, map: {m}, side: {side}")
+        return plt
+
+def _plot_to_byteimg(plt, format="png"):
+    buf = io.BytesIO()
+    # https://stackoverflow.com/questions/57316491/how-to-convert-matplotlib-figure-to-pil-image-object-without-saving-image
+    # https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+    plt.savefig(buf, format=format)
+    buf.seek(0)
+    im = PIL.Image.open(buf)
+    # https://jdhao.github.io/2019/07/06/python_opencv_pil_image_to_bytes/
+    buf = io.BytesIO()
+    im.save(buf, format=format)
+    byte_im = buf.getvalue()
+    return byte_im
+
 class ConsoleWinrateApi(Resource):
 
     def get(self, oid):
@@ -215,6 +245,8 @@ class ConsoleWinrateApi(Resource):
             map = request.args.get("map")
             # for winrate per side, allowed values: Axis, Allies
             side = request.args.get("side")
+            # whether to return the statistics as plot or not
+            as_img = request.args.get("as_img")
 
             clan = ConsoleClan.objects.get(id=oid)
             # get all matches where the clan was either on side1 and caps1 > caps2 (condition 1)
@@ -248,11 +280,37 @@ class ConsoleWinrateApi(Resource):
                 total = clan.num_matches
                 wins = ConsoleMatch.objects((win_cond1 | win_cond2)).count()
 
-            return get_response({
-                "total": total,
-                "wins": wins,
-                "winrate": round(wins / total, 3)
-            })
+            if as_img and total > 0:
+                # plt.figure()
+                # def func(pct, allvalues): 
+                #     absolute = int(pct / 100.*np.sum(allvalues)) 
+                #     return "{:.1f}%\n({:d})".format(pct, absolute)
+                # plt.pie([wins, total-wins], labels=("victories", "defeats"), autopct=lambda pct: func(pct, [wins, total-wins]))
+                # plt.legend(loc="upper right")
+                # plt.title(f"Winrate of {clan.tag}, map: {map}, side: {side}")
+                plt = _plot((wins, total-wins), ptype="pie", labels=("victories", "defeats"), clantag=clan.tag, m=map, side=side)
+                # buf = io.BytesIO()
+                # # https://stackoverflow.com/questions/57316491/how-to-convert-matplotlib-figure-to-pil-image-object-without-saving-image
+                # # https://stackoverflow.com/questions/8598673/how-to-save-a-pylab-figure-into-in-memory-file-which-can-be-read-into-pil-image/8598881
+                # plt.savefig(buf, format="png")
+                # buf.seek(0)
+                # im = PIL.Image.open(buf)
+                # # https://jdhao.github.io/2019/07/06/python_opencv_pil_image_to_bytes/
+                # buf = io.BytesIO()
+                # im.save(buf, format="png")
+                # byte_im = buf.getvalue()
+                byte_im = _plot_to_byteimg(plt)
+                img = ConsoleImage(image=byte_im)
+                # save store by not storing the image
+                #img.save()
+                return send_file(img.image, "image/png")
+
+            else:
+                return get_response({
+                    "total": total,
+                    "wins": wins,
+                    "winrate": round(wins / total, 3)
+                })
 
         except ZeroDivisionError:
             return get_response({
@@ -277,6 +335,8 @@ class ConsoleResultTypesApi(Resource):
             map = request.args.get("map")
             # for winrate per side, allowed values: Axis, Allies
             side = request.args.get("side")
+            # whether to return the statistics as plot or not
+            as_img = request.args.get("as_img")
 
             clan = ConsoleClan.objects.get(id=oid)
 
@@ -324,32 +384,41 @@ class ConsoleResultTypesApi(Resource):
         except Exception as e:
             return handle_error(f"error fetching items from database, terminated with error: {e}", 500)
         else:
-            return get_response({
-                "5-0": {
-                    "count": vic_5,
-                    "share": round(vic_5 / total, 3)
-                },
-                "4-1": {
-                    "count": vic_4,
-                    "share": round(vic_4 / total, 3)
-                },
-                "3-2": {
-                    "count": vic_3,
-                    "share": round(vic_3 / total, 3)
-                },
-                "2-3": {
-                    "count": def_2,
-                    "share": round(def_2 / total, 3)
-                },
-                "1-4": {
-                    "count": def_1,
-                    "share": round(def_1 / total, 3)
-                },
-                "0-5": {
-                    "count": def_0,
-                    "share": round(def_0 / total, 3)
-                }
-            })
+            if as_img:
+                x = (vic_5, vic_4, vic_3, def_2, def_1, def_0)
+                c = ["darkgreen", "green", "lightgreen", "lightsalmon", "tomato", "r"]
+                plt = _plot(x, labels=("5-0", "4-1", "3-2", "2-3", "1-4", "0-5"), clantag=clan.tag, m=map, side=side, colors=c)
+                byte_im = _plot_to_byteimg(plt)
+                img = ConsoleImage(image=byte_im)
+                return send_file(img.image, "image/png")
+
+            else:
+                return get_response({
+                    "5-0": {
+                        "count": vic_5,
+                        "share": round(vic_5 / total, 3)
+                    },
+                    "4-1": {
+                        "count": vic_4,
+                        "share": round(vic_4 / total, 3)
+                    },
+                    "3-2": {
+                        "count": vic_3,
+                        "share": round(vic_3 / total, 3)
+                    },
+                    "2-3": {
+                        "count": def_2,
+                        "share": round(def_2 / total, 3)
+                    },
+                    "1-4": {
+                        "count": def_1,
+                        "share": round(def_1 / total, 3)
+                    },
+                    "0-5": {
+                        "count": def_0,
+                        "share": round(def_0 / total, 3)
+                    }
+                })
 
 
 
