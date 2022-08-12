@@ -29,6 +29,7 @@ class Match(db.Document):
     # number of players on each side (assuming both teams had the same number of players)
     players      = db.IntField()
     map          = db.StringField(required=True)
+    strongpoints = db.ListField(db.StringField(), max_length=5)
     date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
     duration     = db.IntField()

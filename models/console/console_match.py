@@ -32,6 +32,7 @@ class ConsoleMatch(db.Document):
     randoms1      = db.IntField() # t1
     randoms2      = db.IntField() # t2    
     map          = db.StringField(required=True)
+    strongpoints = db.ListField(db.StringField(), max_length=5)
     date         = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
     duration     = db.IntField()
