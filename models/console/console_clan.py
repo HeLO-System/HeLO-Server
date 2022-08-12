@@ -18,7 +18,7 @@ class ConsoleClan(db.Document):
     # discord invite link to a clan's discord server
     invite = db.StringField()
     # current HeLO Score
-    score = db.IntField(default=600)
+    score = db.IntField(default=1000)
     # number of games
     num_matches = db.IntField(default=0)
     # confirmation, reserved ??
