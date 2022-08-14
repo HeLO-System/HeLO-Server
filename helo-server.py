@@ -20,17 +20,19 @@ DB = {
     'NAME_PC': os.environ.get('DB_NAME_PC'),
     'NAME_CONSOLE': os.environ.get('DB_NAME_CONSOLE')
 }
-# app.config['MONGODB_HOST'] = ('mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_PC)s') % DB
-app.config["MONGODB_SETTINGS"] = [
-    {
-        "host": ('mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_PC)s') % DB,
-        "alias": "default",
-    },
-    {
-        "host": ('mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_CONSOLE)s') % DB,
-        "alias": "console",
-    }
-]
+if DB['HOST'] == 'localhost':
+    app.config['MONGODB_HOST'] = 'mongodb://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_PC)s?authSource=admin' % DB
+else:
+    app.config["MONGODB_SETTINGS"] = [
+        {
+            "host": 'mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_PC)s' % DB,
+            "alias": "default",
+        },
+        {
+            "host": 'mongodb+srv://%(USERNAME)s:%(PASSWORD)s@%(HOST)s/%(NAME_CONSOLE)s' % DB,
+            "alias": "console",
+        }
+    ]
 
 initialize_db(app)
 initialize_routes(Api(app))
