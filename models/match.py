@@ -66,6 +66,15 @@ class Match(db.Document):
         "queryset_class": CustomQuerySet
     }
 
+    def clean(self):
+        if self.player_dist1 is not None or self.player_dist2 is not None:
+            if sum(self.player_dist1) > 50 or sum(self.player_dist2) > 50:
+                raise ValueError("player distributions cannot exceed 50 players")
+        if self.players > 100:
+            raise ValueError("players cannot exceed 100 players")
+        if (self.player_dist1 is not None or self.player_dist2 is not None) and self.players != 0:
+            raise ValueError("players and player distributions cannot both be set")
+
     def needs_confirmations(self):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
             # do the calcs then
