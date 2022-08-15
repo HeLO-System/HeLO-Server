@@ -39,7 +39,7 @@ def initialize_routes(api):
     api.add_resource(ConsoleClanApi, '/console/clan/<oid>')
     api.add_resource(ConsoleClansApi, '/console/clans')
     api.add_resource(ConsoleScoreHistoryApi, '/console/clan/<oid>/score_history')
-    api.add_resource(ConsoleMatchApi, '/console/match/<oid>')
+    api.add_resource(ConsoleMatchApi, '/console/match/<match_id>')
     api.add_resource(ConsoleMatchesApi, '/console/matches')
     api.add_resource(ConsoleScoresApi, '/console/scores')
     api.add_resource(ConsoleScoreApi, '/console/score/<oid>')
