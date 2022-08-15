@@ -2,7 +2,7 @@
 import datetime
 from enum import Enum
 
-from flask import request, Response, current_app
+from flask import request, Response, current_app, redirect
 from flask_jwt_extended import jwt_required, create_access_token
 from flask_restful import Resource
 from mongoengine import DoesNotExist
@@ -25,7 +25,10 @@ class DiscordLogin(Resource):
         self.discord = discord
 
     def get(self):
-        return self.discord.create_session(scope=['guilds.members.read'])
+        redirect_uri = request.args.get('redirect_uri')
+        if redirect_uri != current_app.config['DISCORD_AUTH_SETTINGS']['redirectUri']:
+            return 'invalid_redirect_uri', 400
+        return self.discord.create_session(scope=['guilds.members.read'], data={'redirect_uri': redirect_uri})
 
 
 class DiscordCallback(Resource):
@@ -64,7 +67,9 @@ class DiscordCallback(Resource):
         return helo_roles, helo_clans
 
     def get(self):
-        self.discord.callback()
+        state = self.discord.callback()
+        if state.get('redirect_uri') is None:
+            return 'bad_request', 400
         user = self.discord.fetch_user()
         guild = self.__resolve_guild(user)
 
@@ -81,7 +86,7 @@ class DiscordCallback(Resource):
             }
         )
 
-        return access_token
+        return redirect(state.get('redirect_uri') + '#' + access_token)
 
 
 class SignupApi(Resource):
