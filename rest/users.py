@@ -1,17 +1,87 @@
 # rest/auth.py
 import datetime
-from flask import request, Response
+from enum import Enum
+
+from flask import request, Response, current_app
 from flask_jwt_extended import jwt_required, create_access_token
 from flask_restful import Resource
+from mongoengine import DoesNotExist
 from mongoengine.queryset.visitor import Q
-from mongoengine.errors import NotUniqueError
 
+from models.clan import Clan
 from models.user import User
 from ._common import get_response, handle_error, get_jwt, admin_required, empty
 
 
+class Role(Enum):
+    User = 'USER'
+    Admin = 'ADMIN'
+    TeamManager = 'TEAM_MANAGER'
+
+class DiscordLogin(Resource):
+    discord = None
+
+    def __init__(self, discord):
+        self.discord = discord
+
+    def get(self):
+        return self.discord.create_session(scope=['guilds.members.read'])
+
+
+class DiscordCallback(Resource):
+    discord = None
+
+    def __init__(self, discord):
+        self.discord = discord
+
+    def get(self):
+        self.discord.callback()
+        user = self.discord.fetch_user()
+        guilds = self.discord.fetch_guilds()
+        is_in_guild = False
+        guild = False
+        required_guild_id = int(current_app.config['DISCORD_AUTH_SETTINGS']['guildId'])
+        for g in guilds:
+            if g.id == required_guild_id:
+                is_in_guild = True
+                guild = g
+
+        if not is_in_guild:
+            return 'not in guild', 401
+
+        info = self.discord.request(f'/users/@me/guilds/{guild.id}/member')
+
+        helo_roles = [Role.User.value]
+        helo_clans = []
+        for r in info['roles']:
+            if r == current_app.config['DISCORD_AUTH_SETTINGS']['adminRole']:
+                helo_roles.append(Role.Admin.value)
+            elif r == current_app.config['DISCORD_AUTH_SETTINGS']['teamManagerRole']:
+                helo_roles.append(Role.TeamManager.value)
+            else:
+                try:
+                    clan = Clan.objects.get(role_id=r)
+                    helo_clans.append(clan.tag)
+                except DoesNotExist:
+                    continue
+                except Exception:
+                    return handle_error(f"error resolving clan membership", 500)
+
+        print(helo_clans)
+        access_token = create_access_token(
+            identity=user.id,
+            expires_delta=datetime.timedelta(hours=8),
+            additional_claims={
+                'roles': helo_roles,
+                'clans': helo_clans,
+            }
+        )
+
+        return access_token
+
+
 class SignupApi(Resource):
-    
+
     def post(self):
         try:
             j = request.get_json()
@@ -24,10 +94,10 @@ class SignupApi(Resource):
             return get_response({'id': user.userid})
         except:
             return handle_error("Error signing up")
-    
-    
+
+
 class LoginApi(Resource):
-    
+
     def post(self):
         try:
             body = request.get_json()
@@ -39,23 +109,23 @@ class LoginApi(Resource):
             if user.role == "admin":
                 print("admin requested JWT token")
                 access_token = create_access_token(identity=user.userid,
-                                                    expires_delta=datetime.timedelta(days=7),
-                                                    additional_claims={"is_admin": True})
+                                                   expires_delta=datetime.timedelta(days=7),
+                                                   additional_claims={"is_admin": True})
             else:
                 print("non-admin requested JWT token")
                 access_token = create_access_token(identity=user.userid,
-                                                    expires_delta=datetime.timedelta(days=7),
-                                                    additional_claims={"is_admin": False})
-            return get_response({ 'token': access_token })
+                                                   expires_delta=datetime.timedelta(days=7),
+                                                   additional_claims={"is_admin": False})
+            return get_response({'token': access_token})
         except:
             return handle_error("Error logging in")
-    
-    
+
+
 class UserApi(Resource):
-    
+
     # get user by discord userid
     def get(self, userid):
-        try:        
+        try:
             if userid == None:
                 return Response(handle_error("no userid provided"), mimetype="application/json", status=500)
             else:
@@ -67,12 +137,11 @@ class UserApi(Resource):
         except:
             return handle_error(f"Error getting user data for {userid}")
 
-
     # update user by object id
     @jwt_required()
     def put(self, userid):
         try:
-            user = User.objects.get(userid=userid)        
+            user = User.objects.get(userid=userid)
             try:
                 # prevents non-admins from changing their role
                 # by checking the additional claim in JWT
@@ -100,13 +169,13 @@ class UserApi(Resource):
                 return handle_error(f"error deleting user in database: {user.userid}")
         except:
             return handle_error(f"error deleting user in database, user not found by oid: {userid}")
-        
-        
+
+
 class UsersApi(Resource):
-    
+
     # get all or filtered by clan tag
     def get(self):
-        try:        
+        try:
             name = request.args.get("name")
             clan = request.args.get("clan_id")
 
@@ -121,7 +190,7 @@ class UsersApi(Resource):
                 "total": total,
                 "items": users.to_json_serializable()
             }
-            
+
             return get_response(res)
 
         except:

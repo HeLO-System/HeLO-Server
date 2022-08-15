@@ -3,7 +3,7 @@ from rest.events import EventApi, EventsApi
 from rest.search import SearchApi
 from rest.simulations import SimulationsApi,\
                             ConsoleSimulationsApi
-from rest.users import SignupApi, LoginApi, UserApi, UsersApi
+from rest.users import SignupApi, LoginApi, UserApi, UsersApi, DiscordLogin, DiscordCallback
 from rest.clans import ClansApi, ClanApi, ScoreHistoryApi,\
                     ConsoleClanApi, ConsoleClansApi, ConsoleScoreHistoryApi
 from rest.scores import ScoreApi, ScoresApi,\
@@ -15,9 +15,11 @@ from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi,\
 from rest.clans import DiscordRoleApi
 
 
-def initialize_routes(api):
+def initialize_routes(api, discord):
     api.add_resource(SignupApi, '/auth/signup')
     api.add_resource(LoginApi, '/auth/login')
+    api.add_resource(DiscordLogin, '/auth/discord/login', resource_class_kwargs={'discord': discord})
+    api.add_resource(DiscordCallback, '/auth/discord/callback', resource_class_kwargs={'discord': discord})
     api.add_resource(UserApi, '/user/<userid>')
     api.add_resource(UsersApi, '/users')
     api.add_resource(ClanApi, '/clan/<oid>')

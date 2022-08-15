@@ -2,8 +2,11 @@
 import json, os, logging
 from flask import Flask, render_template, jsonify
 from flask_bcrypt import Bcrypt
+from flask_discord import DiscordOAuth2Session
 from flask_restful import Api
 from flask_jwt_extended import JWTManager
+
+from discord.auth import initialize_discord_auth
 from rest._routes import initialize_routes
 from database._db import initialize_db
 
@@ -33,11 +36,13 @@ app.config["MONGODB_SETTINGS"] = [
 ]
 
 initialize_db(app)
-initialize_routes(Api(app))
+discord = initialize_discord_auth(app)
+initialize_routes(Api(app), discord)
 
 bcrypt = Bcrypt(app)
 
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 jwt = JWTManager(app)
 
 # needs to be true for custom error messages
