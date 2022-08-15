@@ -132,3 +132,4 @@ Scripts/
 Lib/
 pyvenv.cfg
 quick reporting/
+test/
