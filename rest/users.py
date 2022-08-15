@@ -34,23 +34,17 @@ class DiscordCallback(Resource):
     def __init__(self, discord):
         self.discord = discord
 
-    def get(self):
-        self.discord.callback()
-        user = self.discord.fetch_user()
-        guilds = self.discord.fetch_guilds()
-        is_in_guild = False
-        guild = False
+    def __resolve_guild(self, user):
+        guilds = user.fetch_guilds()
         required_guild_id = int(current_app.config['DISCORD_AUTH_SETTINGS']['guildId'])
         for g in guilds:
             if g.id == required_guild_id:
-                is_in_guild = True
-                guild = g
+                return g
 
-        if not is_in_guild:
-            return 'not in guild', 401
+        return None
 
-        info = self.discord.request(f'/users/@me/guilds/{guild.id}/member')
-
+    def __resolve_roles_clans(self, user_guild):
+        info = self.discord.request(f'/users/@me/guilds/{user_guild.id}/member')
         helo_roles = [Role.User.value]
         helo_clans = []
         for r in info['roles']:
@@ -67,7 +61,17 @@ class DiscordCallback(Resource):
                 except Exception:
                     return handle_error(f"error resolving clan membership", 500)
 
-        print(helo_clans)
+        return helo_roles, helo_clans
+
+    def get(self):
+        self.discord.callback()
+        user = self.discord.fetch_user()
+        guild = self.__resolve_guild(user)
+
+        if guild is None:
+            return 'not in guild', 401
+
+        helo_roles, helo_clans = self.__resolve_roles_clans(guild)
         access_token = create_access_token(
             identity=user.id,
             expires_delta=datetime.timedelta(hours=8),
