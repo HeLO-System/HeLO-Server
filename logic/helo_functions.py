@@ -189,7 +189,7 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
             S2 = 1 - S1
         # calulate the new HeLO scores
         score1_new = score1 + K1 * m * float(c) * (math.log(n1/((t1*N)/T), K1) + 1) * float(S1 - prob1)
-        score2_new = score2 + K2 * m * float(c) * (math.log(n1/((t1*N)/T), K2) + 1) * float(S2 - prob2)
+        score2_new = score2 + K2 * m * float(c) * (math.log(n2/((t2*N)/T), K2) + 1) * float(S2 - prob2)
         return round(score1_new), round(score2_new), None
     except AssertionError:
         return None, None, "Sum of points in score must be between 4 and 5"

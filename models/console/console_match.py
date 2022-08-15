@@ -47,6 +47,8 @@ class ConsoleMatch(db.Document):
     conf1        = db.StringField()
     # user id of the user who confirmed the match for clan2
     conf2        = db.StringField()
+    # whether it's offensive or not
+    offensive = db.BooleanField()
     # flag to check whether corresponding score objects to the match exist or not
     score_posted = db.BooleanField()
     # reserved for admins, necessary to start a recalculate process for this match
@@ -81,5 +83,6 @@ class ConsoleMatch(db.Document):
             "t1": self.randoms1,
             "t2": self.randoms2,
             "N": self.players1 + self.players2,
-            "T": self.randoms1 + self.randoms2 + self.players1 + self.players2
+            "T": self.randoms1 + self.randoms2 + self.players1 + self.players2,
+            "offensive": self.offensive
         }
