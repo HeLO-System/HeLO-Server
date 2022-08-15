@@ -1,18 +1,18 @@
 # rest/routes.py
-from rest.events import EventApi, EventsApi
-from rest.search import SearchApi
-from rest.simulations import SimulationsApi,\
-                            ConsoleSimulationsApi
-from rest.users import SignupApi, LoginApi, UserApi, UsersApi
-from rest.clans import ClansApi, ClanApi, ScoreHistoryApi,\
-                    ConsoleClanApi, ConsoleClansApi, ConsoleScoreHistoryApi
-from rest.scores import ScoreApi, ScoresApi,\
-                    ConsoleScoreApi, ConsoleScoresApi
-from rest.matches import MatchApi, MatchesApi,\
-                    ConsoleMatchApi, ConsoleMatchesApi
-from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi,\
-                    ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
+from rest.clans import ClansApi, ClanApi, ScoreHistoryApi, \
+    ConsoleClanApi, ConsoleClansApi, ConsoleScoreHistoryApi
 from rest.clans import DiscordRoleApi
+from rest.events import EventApi, EventsApi
+from rest.matches import MatchApi, MatchesApi, \
+    ConsoleMatchApi, ConsoleMatchesApi
+from rest.scores import ScoreApi, ScoresApi, \
+    ConsoleScoreApi, ConsoleScoresApi
+from rest.search import SearchApi
+from rest.simulations import SimulationsApi, \
+    ConsoleSimulationsApi
+from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi, \
+    ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
+from rest.users import SignupApi, LoginApi, UserApi, UsersApi
 
 
 def initialize_routes(api):
@@ -23,7 +23,7 @@ def initialize_routes(api):
     api.add_resource(ClanApi, '/clan/<oid>')
     api.add_resource(ClansApi, '/clans')
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
-    api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
+    api.add_resource(MatchApi, '/match/<match_id>')
     api.add_resource(MatchesApi, '/matches')
     api.add_resource(EventApi, '/event/<oid>')
     api.add_resource(EventsApi, '/events')
