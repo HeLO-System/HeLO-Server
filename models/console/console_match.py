@@ -29,8 +29,8 @@ class ConsoleMatch(db.Document):
     # number of players on each side (assuming both teams had the same number of players)
     players1      = db.IntField() # n1
     players2      = db.IntField() # n2
-    randoms1      = db.IntField() # t1
-    randoms2      = db.IntField() # t2    
+    randoms1      = db.IntField() # this is not t1 as in the calculations, t1 = players1 + randoms1
+    randoms2      = db.IntField() # see t1    
     map          = db.StringField(required=True)
     strongpoints = db.ListField(db.StringField(), max_length=5)
     date         = db.DateTimeField(required=True)
@@ -80,8 +80,8 @@ class ConsoleMatch(db.Document):
         return {
             "n1": self.players1,
             "n2": self.players2,
-            "t1": self.randoms1,
-            "t2": self.randoms2,
+            "t1": self.randoms1 + self.players1,
+            "t2": self.randoms2 + self.players2,
             "N": self.players1 + self.players2,
             "T": self.randoms1 + self.randoms2 + self.players1 + self.players2,
             "offensive": self.offensive
