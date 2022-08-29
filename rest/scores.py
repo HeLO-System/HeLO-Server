@@ -220,8 +220,9 @@ class ConsoleScoreApi(Resource):
     @admin_required()
     def delete(self, oid):
         try:
-            scores = ConsoleScore.objects.get(id=oid)        
-            scores = scores.delete()
+            score = ConsoleScore.objects.get(id=oid)
+            score.id = oid # work around objects.get() not returning an ObjectId
+            score.delete()
 
         except ValidationError:
                 return handle_error("not a valid object id", 400)
@@ -230,7 +231,7 @@ class ConsoleScoreApi(Resource):
         except Exception as e:
             return handle_error(f"error deleting score in database, terminated with error: {e}", 500)
         else:
-            return "", 204
+            return get_response({"message": f"deleted score with id: {oid}"}, 204)
 
 
 
