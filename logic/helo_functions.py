@@ -134,7 +134,7 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
 #############################################
 
 def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
-                        c=1, n1=50, t1=50, n2=50, t2=50, N=100, T=100, offensive=False):
+                        c=1, n1=50, t1=50, n2=50, t2=50, offensive=False):
     """_summary_
 
     Args:
@@ -149,29 +149,27 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
         t1 (int, optional): total number of players in the team1 (including random players). Defaults to 50.
         n2 (int, optional): number of clan players in team2, n <= t. Defaults to 50.
         t2 (int, optional): total number of players in the team2 (including random players). Defaults to 50.
-        N (int, optional): number of clan players on the server, N <= T. Defaults to 100.
-        T (int, optional): total number of players on the server (including random players). Defaults to 100.
         offensive (bool, optional): offensive mode or warfare, Default is False
     """
     try:
         # determine the K factor by the number of games played
         if matches1 <= 10:
-            K1 = 64
-        elif matches1 > 10 and matches1 <= 20:
             K1 = 32
+        elif matches1 > 10 and matches1 <= 30:
+            K1 = 24
         else:
             K1 = 16
 
         if matches2 <= 10:
-            K2 = 64
-        elif matches2 > 10 and matches2 <= 20:
             K2 = 32
+        elif matches2 > 10 and matches2 <= 30:
+            K2 = 24
         else:
             K2 = 16
 
         # determine offensive mode factor
         if not offensive:
-            m = 3.3
+            m = 3
         else:
             m = 0.6
         
@@ -188,9 +186,9 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
             S1 = caps1 * 0.1 if caps1 <= 4 else 1
             S2 = 1 - S1
         # calulate the new HeLO scores
-        score1_new = score1 + K1 * m * float(c) * (math.log(n1/((t1*N)/T), K1) + 1) * float(S1 - prob1)
-        score2_new = score2 + K2 * m * float(c) * (math.log(n2/((t2*N)/T), K2) + 1) * float(S2 - prob2)
-        return round(score1_new), round(score2_new), None
+        score1_new = score1 + K1 * m * float(c) * (math.log((n1*t2)/(n2*t1), K1) + t1/t2) * float(S1 - prob1)
+        score2_new = score2 + K2 * m * float(c) * (math.log((n2*t1)/(n1*t2), K2) + t2/t1) * float(S2 - prob2)
+        return round(score1_new, 2), round(score2_new, 2), None
     except AssertionError:
         return None, None, "Sum of points in score must be between 4 and 5"
 
@@ -198,7 +196,7 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
 def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: int, c: int = 1,
                     player_dist1: list = None, player_dist2: list = None,
                     num_matches1: list = None, num_matches2: list = None,
-                    n1=50, t1=50, n2=50, t2=50, N=100, T=100, offensive=False):
+                    n1=50, t1=50, n2=50, t2=50, offensive=False):
     """_summary_
 
     Args:
@@ -217,8 +215,6 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
         t1 (int, optional): total number of players in the team1 (including random players). Defaults to 50.
         n2 (list, optional): number of clan players in team2, n <= t. Defaults to 50.
         t2 (int, optional): total number of players in the team2 (including random players). Defaults to 50.
-        N (int, optional): number of clan players on the server, N <= T. Defaults to 100.
-        T (int, optional): total number of players on the server (including random players). Defaults to 100.
         offensive (bool, optional): offensive mode or warfare, Default is False
     """
     # find the max value of number of matches and take this to compute the team's K factor
@@ -245,7 +241,7 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
 
     score1, score2, err = get_new_console_scores(avg1, avg2, caps1, caps2,
                                         c=c, matches1=max1, matches2=max2,
-                                        n1=n1, t1=t1, n2=n2, t2=t2, N=N, T=T,
+                                        n1=n1, t1=t1, n2=n2, t2=t2,
                                         offensive=offensive)
     if err is not None: return None, None, err
     gain1, gain2 = score1 - avg1, score2 - avg2
@@ -253,8 +249,8 @@ def get_console_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, 
     # share the gain depending on the player distribution
     # if there is no player distribution, share equally
     # cs = clan score, part = partial share according to the distribution
-    clan_scores1 = [round(cs + part * gain1) for cs, part in zip(clan_scores1, weights1)]
-    clan_scores2 = [round(cs + part * gain2) for cs, part in zip(clan_scores2, weights2)]
+    clan_scores1 = [round(cs + part * gain1, 2) for cs, part in zip(clan_scores1, weights1)]
+    clan_scores2 = [round(cs + part * gain2, 2) for cs, part in zip(clan_scores2, weights2)]
 
     return clan_scores1, clan_scores2, err
 
