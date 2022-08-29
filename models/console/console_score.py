@@ -19,7 +19,7 @@ class ConsoleScore(db.Document):
     # match id of the match where the score calculation
     # is based on, something like "StDb-91.-2022-01-07"
     match_id = db.StringField(required=True)
-    score = db.IntField(required=True)
+    score = db.DecimalField(required=True)
     # private property, should be readed only
     # TODO: implement real protection
     _created_at = db.DateTimeField(default=datetime.now())
