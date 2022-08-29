@@ -6,7 +6,7 @@ import traceback
 from flask import Response, abort
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt
-            
+
 
 # build response
 def get_response(obj, status=200):
@@ -20,7 +20,7 @@ def get_response(obj, status=200):
 
 # build error json
 # add_info, reserved, will be used later ... maybe
-def handle_error(text, status=400, add_info=None): 
+def handle_error(text, status=400, add_info=None):
     logging.error(traceback.format_exc())
     if add_info is None:
         return {"error": text}, status
@@ -37,7 +37,7 @@ def empty(s: str):
     return False
 
 
-# custom decorator varifying JWT is present in the request,
+# custom decorator verifying JWT is present in the request,
 # as well as insuring that the request has a claim indicating
 # the user is an admin
 def admin_required():

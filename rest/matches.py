@@ -21,7 +21,7 @@ from ._common import get_response, handle_error, get_jwt, empty, validate_schema
 ###############################################
 
 class MatchApi(Resource):
-    
+
     # get by object id
     def get(self, oid):
         try:
@@ -38,7 +38,7 @@ class MatchApi(Resource):
             return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
-        
+
 
     # update match by object id
     @jwt_required()
@@ -52,7 +52,7 @@ class MatchApi(Resource):
             res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             # load Match object for the logic instead of working with the QuerySet
             match = Match.objects.get(id=oid)
-            
+
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
                 if err is not None: raise ValueError
@@ -60,7 +60,7 @@ class MatchApi(Resource):
 
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced match with id: {oid}"}, 200)
-            
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except ValueError:
@@ -105,7 +105,7 @@ class MatchApi(Resource):
     @jwt_required()
     def delete(self, oid):
         try:
-            match = Match.objects.get(id=oid)        
+            match = Match.objects.get(id=oid)
             match = match.delete()
 
         except ValidationError:
@@ -116,11 +116,11 @@ class MatchApi(Resource):
             return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
         else:
             return get_response("", 204)
-        
+
 
 
 class MatchesApi(Resource):
-    
+
     # get all or filtered by match id
     def get(self):
         try:
@@ -167,7 +167,7 @@ class MatchesApi(Resource):
             fields = select.split(',') if select is not None else []
 
             # filter through the documents by assigning the intersection (&=)
-            # for every query parameter one by one  
+            # for every query parameter one by one
             filter = Q()
 
             if not empty(match_id): filter &= Q(match_id__icontains=match_id)
@@ -201,7 +201,7 @@ class MatchesApi(Resource):
                 return get_response(matches)
 
             matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-        
+
         except BadRequest as e:
             # TODO: better error response
             return handle_error(f"Bad Request, terminated with: {e}", 400)
@@ -229,7 +229,7 @@ class MatchesApi(Resource):
                 err = calc_scores(match)
                 if err is not None: raise ValueError
                 print("match confirmed")
-                
+
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
         except ValidationError as e:
@@ -247,7 +247,7 @@ class MatchesApi(Resource):
 
 
 class ConsoleMatchApi(Resource):
-    
+
     # get by object id
     def get(self, oid):
         try:
@@ -264,7 +264,7 @@ class ConsoleMatchApi(Resource):
             return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
-        
+
 
     # update match by object id
     @jwt_required()
@@ -278,7 +278,7 @@ class ConsoleMatchApi(Resource):
             res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             # load Match object for the logic instead of working with the QuerySet
             match = ConsoleMatch.objects.get(id=oid)
-            
+
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match, console=True)
                 if err is not None: raise ValueError
@@ -286,7 +286,7 @@ class ConsoleMatchApi(Resource):
 
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced match with id: {oid}"}, 200)
-            
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except ValueError:
@@ -331,7 +331,7 @@ class ConsoleMatchApi(Resource):
     @jwt_required()
     def delete(self, oid):
         try:
-            match = ConsoleMatch.objects.get(id=oid)        
+            match = ConsoleMatch.objects.get(id=oid)
             match = match.delete()
 
         except ValidationError:
@@ -342,11 +342,11 @@ class ConsoleMatchApi(Resource):
             return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
         else:
             return get_response("", 204)
-        
+
 
 
 class ConsoleMatchesApi(Resource):
-    
+
     # get all or filtered by match id
     def get(self):
         try:
@@ -392,7 +392,7 @@ class ConsoleMatchesApi(Resource):
             fields = select.split(',') if select is not None else []
 
             # filter through the documents by assigning the intersection (&=)
-            # for every query parameter one by one  
+            # for every query parameter one by one
             filter = Q()
 
             if not empty(match_id): filter &= Q(match_id__icontains=match_id)
@@ -418,7 +418,7 @@ class ConsoleMatchesApi(Resource):
                 return get_response(matches)
 
             matches = ConsoleMatch.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
-        
+
         except BadRequest as e:
             # TODO: better error response
             return handle_error(f"Bad Request, terminated with: {e}", 400)
@@ -446,7 +446,7 @@ class ConsoleMatchesApi(Resource):
                 err = calc_scores(match, console=True)
                 if err is not None: raise ValueError
                 print("match confirmed")
-                
+
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
         except ValidationError as e:

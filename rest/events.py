@@ -8,7 +8,7 @@ from ._common import get_response, handle_error
 
 
 class EventApi(Resource):
-    
+
     # get by object id
     def get(self, oid):
         try:
@@ -16,13 +16,13 @@ class EventApi(Resource):
             return get_response(event)
         except:
             return handle_error(f"error getting event from database, event not found by oid: {oid}")
-        
+
 
     # update event by object id
     @jwt_required()
     def put(self, oid):
         try:
-            event = Event.objects.get(id=oid)        
+            event = Event.objects.get(id=oid)
             try:
                 event.update(**request.get_json())
                 return '', 204
@@ -35,7 +35,7 @@ class EventApi(Resource):
     @jwt_required()
     def delete(self, oid):
         try:
-            event = Event.objects.get(id=oid)        
+            event = Event.objects.get(id=oid)
             try:
                 event = event.delete()
                 return '', 204
@@ -43,11 +43,11 @@ class EventApi(Resource):
                 return handle_error(f"error deleting event in database: {event.tag}")
         except:
             return handle_error(f"error deleting event in database, event not found by oid: {oid}")
-        
+
 
 
 class EventsApi(Resource):
-    
+
     # get all or filtered by event tag
     def get(self):
         try:

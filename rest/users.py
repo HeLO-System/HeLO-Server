@@ -11,7 +11,7 @@ from ._common import get_response, handle_error, get_jwt, admin_required, empty
 
 
 class SignupApi(Resource):
-    
+
     def post(self):
         try:
             j = request.get_json()
@@ -24,10 +24,10 @@ class SignupApi(Resource):
             return get_response({'id': user.userid})
         except:
             return handle_error("Error signing up")
-    
-    
+
+
 class LoginApi(Resource):
-    
+
     def post(self):
         try:
             body = request.get_json()
@@ -49,13 +49,13 @@ class LoginApi(Resource):
             return get_response({ 'token': access_token })
         except:
             return handle_error("Error logging in")
-    
-    
+
+
 class UserApi(Resource):
-    
+
     # get user by discord userid
     def get(self, userid):
-        try:        
+        try:
             if userid == None:
                 return Response(handle_error("no userid provided"), mimetype="application/json", status=500)
             else:
@@ -72,7 +72,7 @@ class UserApi(Resource):
     @jwt_required()
     def put(self, userid):
         try:
-            user = User.objects.get(userid=userid)        
+            user = User.objects.get(userid=userid)
             try:
                 # prevents non-admins from changing their role
                 # by checking the additional claim in JWT
@@ -100,13 +100,13 @@ class UserApi(Resource):
                 return handle_error(f"error deleting user in database: {user.userid}")
         except:
             return handle_error(f"error deleting user in database, user not found by oid: {userid}")
-        
-        
+
+
 class UsersApi(Resource):
-    
+
     # get all or filtered by clan tag
     def get(self):
-        try:        
+        try:
             name = request.args.get("name")
             clan = request.args.get("clan_id")
 
@@ -121,7 +121,7 @@ class UsersApi(Resource):
                 "total": total,
                 "items": users.to_json_serializable()
             }
-            
+
             return get_response(res)
 
         except:

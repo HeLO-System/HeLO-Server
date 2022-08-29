@@ -16,7 +16,7 @@ from ._common import get_response, handle_error, empty, admin_required, validate
 ###############################################
 
 class ScoreApi(Resource):
-    
+
     # get by object id
     def get(self, oid):
         try:
@@ -40,7 +40,7 @@ class ScoreApi(Resource):
             if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = Score(**request.get_json())
             score.validate()
-            scores_qs = Score.objects(id=oid)        
+            scores_qs = Score.objects(id=oid)
             res = scores_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced score with id: {oid}"}, 200)
@@ -52,11 +52,11 @@ class ScoreApi(Resource):
         else:
             return get_response({"message": f"created score with id: {oid}"}, 201)
 
-    
+
     @admin_required()
     def patch(self, oid):
         try:
-            scores = Score.objects.get(id=oid)        
+            scores = Score.objects.get(id=oid)
             scores.update(**request.get_json())
 
         except ValidationError:
@@ -73,7 +73,7 @@ class ScoreApi(Resource):
     @admin_required()
     def delete(self, oid):
         try:
-            scores = Score.objects.get(id=oid)        
+            scores = Score.objects.get(id=oid)
             scores = scores.delete()
 
         except ValidationError:
@@ -88,7 +88,7 @@ class ScoreApi(Resource):
 
 
 class ScoresApi(Resource):
-    
+
     # get all or filtered by clan tag
     def get(self):
         try:
@@ -122,7 +122,7 @@ class ScoresApi(Resource):
             if not empty(score): filter &= Q(score=score)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
-            
+
             if not empty(desc) and desc:
                 scores = Score.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
                 return get_response(scores)
@@ -163,7 +163,7 @@ class ScoresApi(Resource):
 ###############################################
 
 class ConsoleScoreApi(Resource):
-    
+
     # get by object id
     def get(self, oid):
         try:
@@ -187,7 +187,7 @@ class ConsoleScoreApi(Resource):
             if "_created_at" in request.get_json().keys(): raise ValidationError("private field '_created_at' must not be set")
             score = ConsoleScore(**request.get_json())
             score.validate()
-            scores_qs = ConsoleScore.objects(id=oid)        
+            scores_qs = ConsoleScore.objects(id=oid)
             res = scores_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced score with id: {oid}"}, 200)
@@ -199,11 +199,11 @@ class ConsoleScoreApi(Resource):
         else:
             return get_response({"message": f"created score with id: {oid}"}, 201)
 
-    
+
     @admin_required()
     def patch(self, oid):
         try:
-            scores = ConsoleScore.objects.get(id=oid)        
+            scores = ConsoleScore.objects.get(id=oid)
             scores.update(**request.get_json())
 
         except ValidationError:
@@ -235,7 +235,7 @@ class ConsoleScoreApi(Resource):
 
 
 class ConsoleScoresApi(Resource):
-    
+
     # get all or filtered by clan tag
     def get(self):
         try:
@@ -269,7 +269,7 @@ class ConsoleScoresApi(Resource):
             if not empty(score): filter &= Q(score=score)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
-            
+
             if not empty(desc) and desc:
                 scores = ConsoleScore.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
                 return get_response(scores)
@@ -302,4 +302,4 @@ class ConsoleScoresApi(Resource):
             return handle_error(f"error creating score in database, terminated with error: {e}", 500)
         else:
             return get_response({ "id": score.id })
-            
+

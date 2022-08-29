@@ -18,7 +18,7 @@ from ._common import get_response, handle_error, validate_schema
 ###############################################
 
 class SimulationsApi(Resource):
-    
+
     def get(self):
         try:
             # validate request schema
@@ -51,7 +51,7 @@ class SimulationsApi(Resource):
                     c=c if "factor" not in ignore else 1,
                     num_players=players if "players" not in ignore else 50
                     )
-            
+
             # no coop game
             else:
                 new_scores1, new_scores2, err = get_new_scores(
@@ -96,7 +96,7 @@ class SimulationsApi(Resource):
 ###############################################
 
 class ConsoleSimulationsApi(Resource):
-    
+
     def get(self):
         try:
             # validate request schema
@@ -137,7 +137,7 @@ class ConsoleSimulationsApi(Resource):
                     N=players1+players2,
                     T=randoms1+randoms2+players1+players2
                     )
-            
+
             # no coop game
             else:
                 new_scores1, new_scores2, err = get_new_console_scores(
