@@ -62,6 +62,6 @@ class SearchApi(Resource):
                 },
                 "example": ".../search?select=core&type=match&limit=5"
             }, 422
-        
+
         else:
             return get_response(docs)

@@ -24,7 +24,7 @@ def initialize_routes(api):
     api.add_resource(ClansApi, '/clans')
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
     api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
-    api.add_resource(MatchesApi, '/matches')    
+    api.add_resource(MatchesApi, '/matches')
     api.add_resource(EventApi, '/event/<oid>')
     api.add_resource(EventsApi, '/events')
     api.add_resource(ScoresApi, '/scores')

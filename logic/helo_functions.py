@@ -172,12 +172,12 @@ def get_new_console_scores(score1, score2, caps1, caps2, matches1=0, matches2=0,
             m = 3
         else:
             m = 0.6
-        
+
         # calculate the probabilities for the teams
         prob1, prob2 = get_win_prob(score1, score2)
         # check if points don't exceed maximum points, which are possible in HLL
         assert 4 < caps1 + caps2 <= 5
-        
+
         if not offensive:
             S1 = caps1 / 5
             S2 = caps2 / 5
