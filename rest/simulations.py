@@ -133,9 +133,7 @@ class ConsoleSimulationsApi(Resource):
                     n1=players1,
                     t1=randoms1,
                     n2=players2,
-                    t2=players1,
-                    N=players1+players2,
-                    T=randoms1+randoms2+players1+players2
+                    t2=players1
                     )
 
             # no coop game
@@ -151,9 +149,7 @@ class ConsoleSimulationsApi(Resource):
                     n1=players1,
                     t1=randoms1,
                     n2=players2,
-                    t2=players1,
-                    N=players1+players2,
-                    T=randoms1+randoms2+players1+players2
+                    t2=players1
                     )
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
