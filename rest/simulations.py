@@ -158,9 +158,9 @@ class ConsoleSimulationsApi(Resource):
 
             # create a dictionary with the new score and difference for every clan
             # on both sides
-            clans1_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  clan.score}
+            clans1_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  float(clan.score)}
                             for clan, new_score in zip(clans1, new_scores1)]
-            clans2_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  clan.score}
+            clans2_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  float(clan.score)}
                             for clan, new_score in zip(clans2, new_scores2)]
             return get_response({
                 "side1": clans1_mapped,
