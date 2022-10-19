@@ -35,9 +35,11 @@ def get_by_clan_id(match, clan_id: str):
     if isinstance(match, Match):
         score_obj = Score
         match_obj = Match
+        console = False
     else:
         score_obj = ConsoleScore
         match_obj = ConsoleMatch
+        console = True
     try:
         return score_obj.objects.get(Q(match_id=match.match_id) & Q(clan=clan_id))
     # if the match haven't been confirmed, there won't be a matching Score object
@@ -61,7 +63,7 @@ def get_by_clan_id(match, clan_id: str):
             # and over again!!
             return get_by_clan_id(matches[0], clan_id)
         except IndexError:
-            return score_obj(clan_id, 0, "DefaultScore", 600)
+            return score_obj(clan_id, 0, "DefaultScore", 600 if not console else 1000)
 
 
 def get_by_num_matches(clan_id: str, num_matches: int, console=False):
@@ -81,7 +83,7 @@ def get_by_num_matches(clan_id: str, num_matches: int, console=False):
     try:
         return score_obj.objects.get(Q(clan=clan_id) & Q(num_matches=num_matches))
     except DoesNotExist:
-        return score_obj(clan_id, 0, "DefaultScore", 600)
+        return score_obj(clan_id, 0, "DefaultScore", 600 if not console else 1000)
 
 
 def get_model(t: str, console=False):

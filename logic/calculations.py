@@ -37,7 +37,7 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                             match.factor, match.players)
                 # for compatibility reasons
                 scores1, scores2 = [score1], [score2]
-            
+
             else:
                 scores1, scores2, err = get_coop_scores(scores1, scores2, match.caps1,
                                                                 match.caps2, match.factor,
@@ -46,7 +46,7 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                                 match.players,
                                                                 num_matches1=num_matches1,
                                                                 num_matches2=num_matches2)
-        
+
         else:
             if len(match.clans1_ids) == 1 and len(match.clans2_ids) == 1:
                 score1, score2, err = get_new_console_scores(scores1[0], scores2[0],
@@ -65,7 +65,7 @@ def calc_scores(match, scores1=None, num_matches1=None, scores2=None, num_matche
                                                                 num_matches1,
                                                                 num_matches2,
                                                                 **match.get_console_settings())
-        
+
 
         _save_clans_and_scores(match, clans1, clans2, scores1, scores2, num_matches1,
                                 num_matches2, recalculate=recalculate, console=console)

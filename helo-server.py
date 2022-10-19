@@ -13,7 +13,7 @@ logging.basicConfig(encoding='utf-8', level=logging.INFO, format=f"%(filename)20
 
 app = Flask(__name__)
 
-DB = { 
+DB = {
     'USERNAME': os.environ.get('DB_USERNAME'),
     'PASSWORD': os.environ.get('DB_PASSWORD'),
     'HOST': os.environ.get('DB_HOST'),
