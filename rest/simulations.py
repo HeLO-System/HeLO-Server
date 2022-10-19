@@ -18,7 +18,7 @@ from ._common import get_response, handle_error, validate_schema
 ###############################################
 
 class SimulationsApi(Resource):
-    
+
     def get(self):
         try:
             # validate request schema
@@ -44,12 +44,14 @@ class SimulationsApi(Resource):
                     clan_scores2=[clan.score for clan in clans2],
                     caps1=request.get_json().get("caps1"),
                     caps2=request.get_json().get("caps2"),
+                    num_matches1=[clan.num_matches for clan in clans1],
+                    num_matches2=[clan.num_matches for clan in clans2],
                     player_dist1=request.get_json().get("player_dist1"),
                     player_dist2=request.get_json().get("player_dist2"),
                     c=c if "factor" not in ignore else 1,
                     num_players=players if "players" not in ignore else 50
                     )
-            
+
             # no coop game
             else:
                 new_scores1, new_scores2, err = get_new_scores(
@@ -94,7 +96,7 @@ class SimulationsApi(Resource):
 ###############################################
 
 class ConsoleSimulationsApi(Resource):
-    
+
     def get(self):
         try:
             # validate request schema
@@ -123,17 +125,17 @@ class ConsoleSimulationsApi(Resource):
                     clan_scores2=[clan.score for clan in clans2],
                     caps1=request.get_json().get("caps1"),
                     caps2=request.get_json().get("caps2"),
+                    num_matches1=[clan.num_matches for clan in clans1],
+                    num_matches2=[clan.num_matches for clan in clans2],
                     player_dist1=request.get_json().get("player_dist1"),
                     player_dist2=request.get_json().get("player_dist2"),
                     c=c if "factor" not in ignore else 1,
                     n1=players1,
                     t1=randoms1,
                     n2=players2,
-                    t2=players1,
-                    N=players1+players2,
-                    T=randoms1+randoms2+players1+players2
+                    t2=players1
                     )
-            
+
             # no coop game
             else:
                 new_scores1, new_scores2, err = get_new_console_scores(
@@ -147,9 +149,7 @@ class ConsoleSimulationsApi(Resource):
                     n1=players1,
                     t1=randoms1,
                     n2=players2,
-                    t2=players1,
-                    N=players1+players2,
-                    T=randoms1+randoms2+players1+players2
+                    t2=players1
                     )
                 # TODO: ugly, make this better
                 new_scores1, new_scores2 = [new_scores1], [new_scores2]
@@ -158,9 +158,9 @@ class ConsoleSimulationsApi(Resource):
 
             # create a dictionary with the new score and difference for every clan
             # on both sides
-            clans1_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  clan.score}
+            clans1_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  float(clan.score)}
                             for clan, new_score in zip(clans1, new_scores1)]
-            clans2_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  clan.score}
+            clans2_mapped = [{"name": clan.tag, "new_score": new_score, "difference": new_score -  float(clan.score)}
                             for clan, new_score in zip(clans2, new_scores2)]
             return get_response({
                 "side1": clans1_mapped,
