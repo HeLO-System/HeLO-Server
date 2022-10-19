@@ -39,6 +39,6 @@ pytz==2022.5
 requests==2.28.1
 six==1.16.0
 urllib3==1.26.7
-virtualenv==20.14.1
+virtualenv==20.16.5
 Werkzeug==2.0.2
 WTForms==3.0.0
