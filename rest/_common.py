@@ -9,9 +9,6 @@ from flask_jwt_extended import get_jwt
 
 
 # build response
-from rest.users import Role
-
-
 def get_response(obj, status=200):
     if type(obj) is dict:
         return Response(json.dumps(obj), mimetype="application/json", status=status)
@@ -49,10 +46,10 @@ def admin_required():
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             claims = get_jwt()
-            for r in claims["roles"]:
-                if r == Role.Admin.value:
-                    return fn(*args, **kwargs)
+            if claims["is_admin"]:
+                return fn(*args, **kwargs)
             else:
+                #return "This action can be performed by an administrator only!", 401
                 return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper

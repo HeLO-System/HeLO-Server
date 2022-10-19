@@ -1,20 +1,15 @@
 # HeLO.py
-import json
-import logging
-import os
-
+import json, os, logging
 from flask import Flask, render_template, jsonify
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager
 from flask_restful import Api
-
-from database._db import initialize_db
-from discord.auth import initialize_discord_auth
+from flask_jwt_extended import JWTManager
 from rest._routes import initialize_routes
+from database._db import initialize_db
+
 
 # init components
-logging.basicConfig(encoding='utf-8', level=logging.INFO,
-                    format=f"%(filename)20s:%(lineno)-3s - %(funcName)-30s %(message)s")
+logging.basicConfig(encoding='utf-8', level=logging.INFO, format=f"%(filename)20s:%(lineno)-3s - %(funcName)-30s %(message)s")
 
 app = Flask(__name__)
 
@@ -40,18 +35,15 @@ else:
     ]
 
 initialize_db(app)
-discord = initialize_discord_auth(app)
-initialize_routes(Api(app), discord)
+initialize_routes(Api(app))
 
 bcrypt = Bcrypt(app)
 
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 jwt = JWTManager(app)
 
 # needs to be true for custom error messages
 app.config["PROPAGATE_EXCEPTIONS"] = True
-
 
 # custom error message for wrong JWTs
 @jwt.invalid_token_loader
@@ -62,9 +54,10 @@ def invalid_token_callback(s):
 # home page: offer some explanation how to use the API
 @app.route('/')
 def home():
-    return render_template('home.html', apis=json.loads(open('static/apis.json', 'r').read())), 200
+    return render_template('home.html', apis = json.loads(open('static/apis.json', 'r').read())), 200
 
 
 # start app
 if __name__ == "__main__":
     app.run()
+
