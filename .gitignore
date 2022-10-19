@@ -132,4 +132,7 @@ Scripts/
 Lib/
 pyvenv.cfg
 quick reporting/
+
+# Editors/IDEs
+.idea/
 test/
