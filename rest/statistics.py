@@ -130,10 +130,10 @@ class ResultTypesApi(Resource):
             def_0 = Match.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=0))
                                         | (Q(clans2_ids=str(clan.id)) & Q(caps2=0)))
                                         & filter).count()
-            
+
             total = def_0 + def_1 + def_2 + vic_3 + vic_4 + vic_5
             if total == 0: total = 1    # to avoid multiple zero division errors
-                    
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except BadRequest as e:
@@ -195,9 +195,9 @@ class PerformanceRatingApi(Resource):
             wins = Match.objects(win_cond1 | win_cond2).count()
 
             pr = (sum(strengths) + 400 * (wins - (total - wins))) / total
-            
+
             return get_response({"pr": round(pr, 2)})
-                
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except BadRequest as e:
@@ -215,8 +215,8 @@ class PerformanceRatingApi(Resource):
 def _plot(x, y=None, ptype="pie", labels=None, clantag=None, m=None, side=None, colors=None):
     if ptype == "pie":
         plt.figure()
-        def func(pct, allvalues): 
-            absolute = int(pct / 100.*np.sum(allvalues)) 
+        def func(pct, allvalues):
+            absolute = int(pct / 100.*np.sum(allvalues))
             return "{:.1f}%\n({:d})".format(pct, absolute)
         plt.pie(x, labels=labels, autopct=lambda pct: func(pct, x), colors=colors)
         plt.legend(loc="upper right")
@@ -356,10 +356,10 @@ class ConsoleResultTypesApi(Resource):
             def_0 = ConsoleMatch.objects(((Q(clans1_ids=str(clan.id)) & Q(caps1=0))
                                         | (Q(clans2_ids=str(clan.id)) & Q(caps2=0)))
                                         & filter).count()
-            
+
             total = def_0 + def_1 + def_2 + vic_3 + vic_4 + vic_5
             if total == 0: total = 1    # to avoid multiple zero division errors
-                    
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except BadRequest as e:
@@ -430,9 +430,9 @@ class ConsolePerformanceRatingApi(Resource):
             wins = ConsoleMatch.objects(win_cond1 | win_cond2).count()
 
             pr = (sum(strengths) + 400 * (wins - (total - wins))) / total
-            
+
             return get_response({"pr": round(pr, 2)})
-                
+
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except BadRequest as e:

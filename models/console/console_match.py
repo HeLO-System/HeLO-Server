@@ -27,14 +27,16 @@ class ConsoleMatch(db.Document):
     caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
-    players1      = db.IntField() # n1
-    players2      = db.IntField() # n2
+    players1      = db.IntField() # n1, also sum(player_dist1)
+    players2      = db.IntField() # n2, also sum(player_dist2)
+    team_size1    = db.IntField() # this is t1 as in the calculations
+    team_size2    = db.IntField() # this is t2 as in the calculations
     randoms1      = db.IntField() # this is not t1 as in the calculations, t1 = players1 + randoms1
     randoms2      = db.IntField() # see t1    
     map          = db.StringField(required=True)
     strongpoints = db.ListField(db.StringField(), max_length=5)
     date         = db.DateTimeField(required=True)
-    # how long the game lasted, max is 90 min
+    # how long the game lasted, max is 90 min (150min for offensive)
     duration     = db.IntField()
     # competitive factor, see HeLO calculations
     factor       = db.FloatField(default=1.0)
@@ -80,9 +82,7 @@ class ConsoleMatch(db.Document):
         return {
             "n1": self.players1,
             "n2": self.players2,
-            "t1": self.randoms1 + self.players1,
-            "t2": self.randoms2 + self.players2,
-            "N": self.players1 + self.players2,
-            "T": self.randoms1 + self.randoms2 + self.players1 + self.players2,
+            "t1": self.team_size1 if self.team_size1 else self.randoms1 + self.players1,
+            "t2": self.team_size2 if self.team_size2 else self.randoms2 + self.players2,
             "offensive": self.offensive
         }
