@@ -1,15 +1,14 @@
 # rest/common.py
-from functools import wraps
 import json
-import logging
-import traceback
-from flask import Response, abort
-from flask_jwt_extended import verify_jwt_in_request
-from flask_jwt_extended import get_jwt
+from functools import wraps
 
+from flask import Response, abort
+from flask_jwt_extended import get_jwt, verify_jwt_in_request
 
 # build response
 from rest.users import Role
+
+from ._error_handling import handle_error
 
 
 def get_response(obj, status=200):
@@ -21,21 +20,9 @@ def get_response(obj, status=200):
         return Response(obj.to_json(), mimetype="application/json", status=status)
 
 
-# build error json
-# add_info, reserved, will be used later ... maybe
-def handle_error(text, status=400, add_info=None):
-    logging.error(traceback.format_exc())
-    if add_info is None:
-        return {"error": text}, status
-
-
 # check for None or empty string
 def empty(s: str):
-    if s is None:
-        return True
-    elif s == "":
-        return True
-    elif s == " ":
+    if s is None or s == "" or s == " ":
         return True
     return False
 
@@ -52,8 +39,7 @@ def admin_required():
             for r in claims["roles"]:
                 if r == Role.Admin.value:
                     return fn(*args, **kwargs)
-            else:
-                return handle_error(f"Authorization failed", 401)
+            return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper
 

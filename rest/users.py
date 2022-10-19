@@ -1,13 +1,13 @@
 import datetime
 from enum import Enum
 
-from flask import request, current_app, redirect
+from flask import current_app, redirect, request
 from flask_jwt_extended import create_access_token
 from flask_restful import Resource
+from models.clan import Clan
 from mongoengine import DoesNotExist
 
-from models.clan import Clan
-from ._common import handle_error
+from ._error_handling import handle_error
 
 
 class Role(Enum):
