@@ -12,12 +12,13 @@ from rest.simulations import SimulationsApi, \
     ConsoleSimulationsApi
 from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi, \
     ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
-from rest.users import DiscordLogin, DiscordCallback
+from rest.users import DiscordLogin, DiscordCallback, LegacyLoginApi
 
 
 def initialize_routes(api, discord):
     api.add_resource(DiscordLogin, '/auth/discord/login', resource_class_kwargs={'discord': discord})
     api.add_resource(DiscordCallback, '/auth/discord/callback', resource_class_kwargs={'discord': discord})
+    api.add_resource(LegacyLoginApi, '/auth/login')
     api.add_resource(ClanApi, '/clan/<oid>')
     api.add_resource(ClansApi, '/clans')
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
