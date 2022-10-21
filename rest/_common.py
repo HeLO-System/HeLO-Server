@@ -42,9 +42,8 @@ def admin_required():
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             claims = get_jwt()
-            for r in claims["roles"]:
-                if r == Role.Admin.value:
-                    return fn(*args, **kwargs)
+            if Role.Admin.value in claims["roles"]:
+                return fn(*args, **kwargs)
             return handle_error(f"Authorization failed", 401)
         return decorator
     return wrapper

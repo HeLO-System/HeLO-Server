@@ -3,7 +3,7 @@ import json
 
 from flask import request
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
 from datetime import datetime
@@ -11,11 +11,11 @@ from werkzeug.exceptions import BadRequest
 
 from models.match import Match
 from models.console.console_match import ConsoleMatch
+from models.user import Role
 from schemas.query_schemas import MatchQuerySchema
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
-from ._common import get_response, handle_error, get_jwt, empty, validate_schema
-
+from ._common import get_response, handle_error, get_jwt, empty, validate_schema, admin_required
 
 
 ###############################################
@@ -72,9 +72,12 @@ class MatchApi(Resource):
         else:
             return get_response({"message": f"created match with id: {oid}"}, 201)
 
-
-    @jwt_required()
+    @admin_required()
     def patch(self, oid):
+        """
+        TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
+        fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
+        """
         try:
             match = Match.objects.get(id=oid)
             match.update(**request.get_json())
@@ -222,23 +225,21 @@ class MatchesApi(Resource):
                 },
             })
 
-
-    # add new match
     @jwt_required()
     def post(self):
         try:
             match = Match(**request.get_json())
+            match.conf1 = get_jwt_identity()
+            match.conf2 = ""
+            match.score_posted = False
             match = match.save()
-            need_conf = match.needs_confirmations() # just to remind the user
-            # a match will always need at least the confirmation of the other team
-            # therefore, there is no point of creating the scores within the POST method
 
-            # temporary
             claims = get_jwt()
-            if not match.needs_confirmations() and not match.score_posted and claims["is_admin"]:
+            if Role.Admin.value in claims["roles"]:
+                match.conf2 = get_jwt_identity()
                 err = calc_scores(match)
-                if err is not None: raise ValueError
-                print("match confirmed")
+                if err is not None:
+                    raise ValueError
 
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
@@ -247,7 +248,7 @@ class MatchesApi(Resource):
         except Exception as e:
             return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not need_conf}, 201)
+            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
 
 
 
@@ -306,9 +307,12 @@ class ConsoleMatchApi(Resource):
         else:
             return get_response({"message": f"created match with id: {oid}"}, 201)
 
-
-    @jwt_required()
+    @admin_required()
     def patch(self, oid):
+        """
+        TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
+        fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
+        """
         try:
             match = ConsoleMatch.objects.get(id=oid)
             match.update(**request.get_json())
@@ -444,18 +448,18 @@ class ConsoleMatchesApi(Resource):
     @jwt_required()
     def post(self):
         try:
-            match = ConsoleMatch(**request.get_json())
+            match = Match(**request.get_json())
+            match.conf1 = get_jwt_identity()
+            match.conf2 = ""
+            match.score_posted = False
             match = match.save()
-            need_conf = match.needs_confirmations() # just to remind the user
-            # a match will always need at least the confirmation of the other team
-            # therefore, there is no point of creating the scores within the POST method
 
-            # temporary
             claims = get_jwt()
-            if not match.needs_confirmations() and not match.score_posted and claims["is_admin"]:
-                err = calc_scores(match, console=True)
-                if err is not None: raise ValueError
-                print("match confirmed")
+            if Role.Admin.value in claims["roles"]:
+                match.conf2 = get_jwt_identity()
+                err = calc_scores(match)
+                if err is not None:
+                    raise ValueError
 
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
@@ -464,4 +468,4 @@ class ConsoleMatchesApi(Resource):
         except Exception as e:
             return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not need_conf}, 201)
+            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
