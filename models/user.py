@@ -1,12 +1,17 @@
 """
 second level class
 """
+from enum import Enum
 
 from flask_bcrypt import generate_password_hash, check_password_hash
 import json
 
 from database.db import db, CustomQuerySet
 
+class Role(Enum):
+    User = 'USER'
+    Admin = 'ADMIN'
+    TeamManager = 'TEAM_MANAGER'
 
 class User(db.Document):
     # discord id, very long number
