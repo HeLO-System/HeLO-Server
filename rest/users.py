@@ -3,9 +3,9 @@ import datetime
 from flask import current_app, redirect, request
 from flask_jwt_extended import create_access_token
 from flask_restful import Resource
-from models.clan import Clan
 from mongoengine import DoesNotExist
 
+from models.clan import Clan
 from models.user import User, Role
 from ._common import get_response, handle_error
 
@@ -80,6 +80,7 @@ class DiscordCallback(Resource):
 
         return redirect(state.get('redirect_uri') + '#' + access_token)
 
+
 class LegacyLoginApi(Resource):
 
     def post(self):
@@ -90,16 +91,20 @@ class LegacyLoginApi(Resource):
             if not authorized:
                 return {'error': 'userid or pin invalid'}, 401
 
+            roles = [Role.User.value]
+
             if user.role == "admin":
-                print("admin requested JWT token")
-                access_token = create_access_token(identity=user.userid,
-                                                   expires_delta=datetime.timedelta(days=7),
-                                                   additional_claims={"is_admin": True})
-            else:
-                print("non-admin requested JWT token")
-                access_token = create_access_token(identity=user.userid,
-                                                   expires_delta=datetime.timedelta(days=7),
-                                                   additional_claims={"is_admin": False})
-            return get_response({ 'token': access_token })
+                roles.append(Role.Admin.value)
+
+            access_token = create_access_token(
+                identity=user.userid,
+                expires_delta=datetime.timedelta(days=8),
+                additional_claims={
+                    'roles': roles,
+                    'clans': [],
+                }
+            )
+
+            return get_response({'token': access_token})
         except:
             return handle_error("Error logging in")
