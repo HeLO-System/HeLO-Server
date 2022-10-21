@@ -1,15 +1,21 @@
 # rest/common.py
 import json
+import logging
+import traceback
 from functools import wraps
 
 from flask import Response, abort
 from flask_jwt_extended import get_jwt, verify_jwt_in_request
 
-# build response
-from rest.users import Role
+from models.user import Role
 
-from ._error_handling import handle_error
 
+# build error json
+# add_info, reserved, will be used later ... maybe
+def handle_error(text, status=400, add_info=None):
+    logging.error(traceback.format_exc())
+    if add_info is None:
+        return {"error": text}, status
 
 def get_response(obj, status=200):
     if type(obj) is dict:

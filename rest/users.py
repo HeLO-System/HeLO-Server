@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 
 from flask import current_app, redirect, request
 from flask_jwt_extended import create_access_token
@@ -7,15 +6,8 @@ from flask_restful import Resource
 from models.clan import Clan
 from mongoengine import DoesNotExist
 
-from models.user import User
-from ._common import get_response
-from ._error_handling import handle_error
-
-
-class Role(Enum):
-    User = 'USER'
-    Admin = 'ADMIN'
-    TeamManager = 'TEAM_MANAGER'
+from models.user import User, Role
+from ._common import get_response, handle_error
 
 
 class DiscordLogin(Resource):
