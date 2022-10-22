@@ -416,7 +416,7 @@ class ConsolePerformanceRatingApi(Resource):
             strengths = []
             for match in matches_side1:
                 scores = [ConsoleClan.objects.get(id=clan_id).score for clan_id in match.clans2_ids]
-                strengths.append(np.average(scores))
+                strengths.append(sum(scores)/len(scores))
             for match in matches_side2:
                 scores = [ConsoleClan.objects.get(id=clan_id).score for clan_id in match.clans1_ids]
                 strengths.append(sum(scores)/len(scores))
