@@ -159,6 +159,7 @@ class ClansApi(Resource):
                 return get_response(clans)
             
             clans = Clan.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            clans = Clan.objects()
 
         except BadRequest as e:
             # TODO: better error response
