@@ -18,7 +18,7 @@ class DiscordLogin(Resource):
 
     def get(self):
         redirect_uri = request.args.get('redirect_uri')
-        if redirect_uri != current_app.config['DISCORD_AUTH_SETTINGS']['redirectUri']:
+        if redirect_uri not in current_app.config['DISCORD_AUTH_SETTINGS']['redirectUris']:
             return 'invalid_redirect_uri', 400
         return self.discord.create_session(scope=['guilds.members.read'], data=dict(redirect_uri=redirect_uri))
 
