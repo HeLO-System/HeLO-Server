@@ -39,18 +39,17 @@ else:
         }
     ]
 
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+# needs to be true for custom error messages
+app.config["PROPAGATE_EXCEPTIONS"] = True
+
 initialize_db(app)
 discord = initialize_discord_auth(app)
 initialize_routes(Api(app), discord)
 
 bcrypt = Bcrypt(app)
-
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 jwt = JWTManager(app)
-
-# needs to be true for custom error messages
-app.config["PROPAGATE_EXCEPTIONS"] = True
 
 
 # custom error message for wrong JWTs
