@@ -10,7 +10,7 @@ def initialize_discord_auth(app):
     app.config["DISCORD_REDIRECT_URI"] = os.environ.get('DISCORD_REDIRECT_URI')
 
     app.config['DISCORD_AUTH_SETTINGS'] = {
-        'redirectUri': os.environ.get('DISCORD_AUTH_REDIRECT_URI'),
+        'redirectUris': os.environ.get('DISCORD_AUTH_REDIRECT_URI').split(","),
         'guildId': os.environ.get('DISCORD_AUTH_GUILD_ID'),
         'adminRole': os.environ.get('DISCORD_AUTH_ADMIN_ROLE'),
         'teamManagerRole': os.environ.get('DISCORD_AUTH_TEAM_MANAGER_ROLE'),
