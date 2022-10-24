@@ -25,8 +25,6 @@ from ._common import get_response, handle_error, get_jwt, empty, validate_schema
 ###############################################
 
 class MatchApi(Resource):
-
-    # get by object id
     def get(self, match_id):
         try:
             match = Match.objects.get(match_id=match_id)
@@ -36,9 +34,12 @@ class MatchApi(Resource):
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
 
-    # update match by object id
-    @jwt_required()
+    @admin_required()
     def put(self, match_id):
+        """
+        TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
+        fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
+        """
         try:
             # validation, if request contains all required fields and types
             match = Match(**request.get_json())
@@ -51,7 +52,6 @@ class MatchApi(Resource):
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
                 if err is not None: raise ValueError
-                print("match confirmed")
 
             if res.raw_result.get("updatedExisting"):
                 return get_response({"message": f"replaced match with id: {match_id}"}, 200)
@@ -99,11 +99,35 @@ class MatchApi(Resource):
         else:
             return get_response("", 204)
 
-    # update match by object id
     @jwt_required()
     def delete(self, match_id):
+        """
+        Delete a match by its ID. A match can only be deleted, if:
+        - the match is not yet posted
+        - the match was confirmed by the requester
+        - the requester is a team manager of one of the participating clans
+        or
+        - the requester is an admin (bypassing all the conditions above)
+        """
         try:
+            claims = get_jwt()
+            is_admin = Role.Admin.value in claims["roles"]
             match = Match.objects.get(match_id=match_id)
+
+            is_clan1_member = False
+            for r in claims["clans"]:
+                if r in match.clans1_ids and Role.TeamManager.value in claims["roles"]:
+                    is_clan1_member = True
+            is_clan2_member = False
+            for r in claims["clans"]:
+                if r in match.clans2_ids and Role.TeamManager.value in claims["roles"]:
+                    is_clan2_member = True
+
+            if match.score_posted and not is_admin:
+                return handle_error("the match is already posted", 403)
+            if match.conf1 != get_jwt_identity() and match.conf2 != get_jwt_identity() and not is_clan1_member and not is_clan2_member and not is_admin:
+                return handle_error("object does not exist", 404)
+
             match.delete()
 
         except ValidationError:
