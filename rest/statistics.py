@@ -416,7 +416,7 @@ class ConsolePerformanceRatingApi(Resource):
             strengths = []
             for match in matches_side1:
                 scores = [ConsoleClan.objects.get(id=clan_id).score for clan_id in match.clans2_ids]
-                strengths.append(np.average(scores))
+                strengths.append(sum(scores)/len(scores))
             for match in matches_side2:
                 scores = [ConsoleClan.objects.get(id=clan_id).score for clan_id in match.clans1_ids]
                 strengths.append(sum(scores)/len(scores))
@@ -429,7 +429,7 @@ class ConsolePerformanceRatingApi(Resource):
             total = clan.num_matches
             wins = ConsoleMatch.objects(win_cond1 | win_cond2).count()
 
-            pr = (sum(strengths) + 400 * (wins - (total - wins))) / total
+            pr = float((sum(strengths) + 400 * (wins - (total - wins))) / total)
 
             return get_response({"pr": round(pr, 2)})
 

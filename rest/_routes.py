@@ -4,7 +4,7 @@ from rest.clans import ClansApi, ClanApi, ScoreHistoryApi, \
 from rest.clans import DiscordRoleApi
 from rest.events import EventApi, EventsApi
 from rest.matches import MatchApi, MatchesApi, \
-    ConsoleMatchApi, ConsoleMatchesApi
+    ConsoleMatchApi, ConsoleMatchesApi, MatchesNotificationApi
 from rest.scores import ScoreApi, ScoresApi, \
     ConsoleScoreApi, ConsoleScoresApi
 from rest.search import SearchApi
@@ -12,19 +12,19 @@ from rest.simulations import SimulationsApi, \
     ConsoleSimulationsApi
 from rest.statistics import WinrateApi, ResultTypesApi, PerformanceRatingApi, \
     ConsoleWinrateApi, ConsoleResultTypesApi, ConsolePerformanceRatingApi
-from rest.users import SignupApi, LoginApi, UserApi, UsersApi
+from rest.users import DiscordLogin, DiscordCallback, LegacyLoginApi
 
 
-def initialize_routes(api):
-    api.add_resource(SignupApi, '/auth/signup')
-    api.add_resource(LoginApi, '/auth/login')
-    api.add_resource(UserApi, '/user/<userid>')
-    api.add_resource(UsersApi, '/users')
+def initialize_routes(api, discord):
+    api.add_resource(DiscordLogin, '/auth/discord/login', resource_class_kwargs={'discord': discord})
+    api.add_resource(DiscordCallback, '/auth/discord/callback', resource_class_kwargs={'discord': discord})
+    api.add_resource(LegacyLoginApi, '/auth/login')
     api.add_resource(ClanApi, '/clan/<oid>')
     api.add_resource(ClansApi, '/clans')
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
     api.add_resource(MatchApi, '/match/<match_id>')
     api.add_resource(MatchesApi, '/matches')
+    api.add_resource(MatchesNotificationApi, '/matches-notifications')
     api.add_resource(EventApi, '/event/<oid>')
     api.add_resource(EventsApi, '/events')
     api.add_resource(ScoresApi, '/scores')

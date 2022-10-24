@@ -1,7 +1,7 @@
 """
 first level class
 """
-
+import enum
 from email.policy import default
 import json
 from random import choices
@@ -9,6 +9,12 @@ from random import choices
 from numpy import require
 
 from database.db import db, CustomQuerySet
+
+
+class Type(enum.Enum):
+    Friendly = "Friendly"
+    Competitive = "Competitive"
+    Tournament = "Tournament"
 
 
 class Match(db.Document):
@@ -60,13 +66,22 @@ class Match(db.Document):
         "queryset_class": CustomQuerySet
     }
 
-
     def needs_confirmations(self):
         if (self.conf1 != "" and self.conf1 is not None) and (self.conf2 != "" and self.conf2 is not None):
             # do the calcs then
             return False
         return True
 
-
     def to_dict(self):
         return json.loads(self.to_json())
+
+    @property
+    def type(self) -> Type or None:
+        if self.factor == 0.6:
+            return Type.Friendly
+        elif self.factor == 2.0:
+            return Type.Competetive
+        elif self.factor == 2.4:
+            return Type.Tournament
+        else:
+            return None

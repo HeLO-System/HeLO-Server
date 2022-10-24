@@ -1,8 +1,11 @@
 # rest/matches.py
+import json
 from datetime import datetime
+from urllib.parse import urlparse
 
-from flask import request
-from flask_jwt_extended import jwt_required
+import requests
+from flask import request, current_app
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
@@ -10,11 +13,12 @@ from werkzeug.exceptions import BadRequest
 
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
+from models.clan import Clan
 from models.console.console_match import ConsoleMatch
-from models.match import Match
+from models.match import Match, Type
+from models.user import Role
 from schemas.query_schemas import MatchQuerySchema
-from ._common import get_response, handle_error, get_jwt, empty, validate_schema
-
+from ._common import get_response, handle_error, get_jwt, empty, validate_schema, admin_required
 
 ###############################################
 #                   PC APIs                   #
@@ -60,8 +64,12 @@ class MatchApi(Resource):
         else:
             return get_response({"message": f"created match with id: {match_id}"}, 201)
 
-    @jwt_required()
+    @admin_required()
     def patch(self, match_id):
+        """
+        TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
+        fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
+        """
         try:
             match = Match.objects.get(match_id=match_id)
             match.update(**request.get_json())
@@ -109,8 +117,6 @@ class MatchApi(Resource):
 
 
 class MatchesApi(Resource):
-
-    # get all or filtered by match id
     def get(self):
         try:
             validate_schema(MatchQuerySchema(), request.args)
@@ -185,11 +191,12 @@ class MatchesApi(Resource):
             if not empty(date_from): filter &= Q(date__gte=date_from)
             if not empty(date_to): filter &= Q(date__lte=date_to)
 
+            filtered = Match.objects(filter)
+            limited = filtered.only(*fields).limit(limit).skip(offset)
             if not empty(desc) and desc:
-                matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
-                return get_response(matches)
-
-            matches = Match.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+                matches = limited.order_by(f"-{sort_by}")
+            else:
+                matches = limited.order_by(f"+{sort_by}")
 
         except BadRequest as e:
             # TODO: better error response
@@ -199,24 +206,31 @@ class MatchesApi(Resource):
         except Exception as e:
             return handle_error(f"error getting matches, terminated with error: {e}", 500)
         else:
-            return get_response(matches)
+            return get_response({
+                'matches': json.loads(matches.to_json()),
+                'meta': {
+                    'count': matches.count(True),
+                    'offset': offset,
+                    'total_count': filtered.count(False),
+                },
+            })
 
     # add new match
     @jwt_required()
     def post(self):
         try:
             match = Match(**request.get_json())
+            match.conf1 = get_jwt_identity()
+            match.conf2 = ""
+            match.score_posted = False
             match = match.save()
-            need_conf = match.needs_confirmations()  # just to remind the user
-            # a match will always need at least the confirmation of the other team
-            # therefore, there is no point of creating the scores within the POST method
 
-            # temporary
             claims = get_jwt()
-            if not match.needs_confirmations() and not match.score_posted and claims["is_admin"]:
+            if Role.Admin.value in claims["roles"]:
+                match.conf2 = get_jwt_identity()
                 err = calc_scores(match)
-                if err is not None: raise ValueError
-                print("match confirmed")
+                if err is not None:
+                    raise ValueError
 
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
@@ -225,8 +239,94 @@ class MatchesApi(Resource):
         except Exception as e:
             return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not need_conf}, 201)
+            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
 
+
+class MatchesNotificationApi(Resource):
+    """
+    Temporary API to report matches to the discord report-match channel. This API will be removed, once reporting a match
+    is done using the MatchesApi match report workflow.
+    """
+
+    def __clan_player_count(self, distribution: list[int], clans: list[Clan], player_count: int or None) -> str:
+        if distribution:
+            res = " & ".join(
+                ["**" + clan.tag + "** (" + str(distribution[i]) + ")" for i, clan in enumerate(clans)]
+            )
+            if len(distribution) > 1:
+                res += " => " + str(sum(distribution))
+        else:
+            res = " & ".join(["**" + clan.tag + "**" for clan in clans]) + "(" + player_count + ")"
+
+        return res
+
+    def __build_webhook_payload(self, match: Match, posting_user: dict) -> dict:
+        event_comment = ""
+        if match.type == Type.Competetive:
+            event_comment = " (%s)" % match.event
+
+        axis = self.__clan_player_count(match.player_dist1, Clan.objects(id__in=match.clans1_ids), match.players)
+        allies = self.__clan_player_count(match.player_dist2, Clan.objects(id__in=match.clans2_ids), match.players)
+
+        caps = "/".join(match.strongpoints)
+        fields = [
+            f"**{match.type.value}{event_comment}**",
+            match.date,
+            f"Axis: {axis}",
+            f"Allies: {allies}",
+            f"Result: **{match.caps1}:{match.caps2}** in **{match.duration}min**",
+            f"Map: **{match.map}**",
+            f"Caps: {caps}",
+        ]
+        if match.stream_url:
+            fields.append(f"Stream: [{urlparse(match.stream_url).hostname}]({match.stream_url})")
+
+        return {
+            "embeds": [{
+                "color": 16750848,
+                "author": {
+                    "name": posting_user["friendly_name"],
+                    "icon_url": posting_user["avatar"],
+                },
+                "title": match.match_id,
+                "url": "https://helo-system.de/matches/" + match.match_id,
+                "description": "\n".join(fields),
+            }],
+        }
+
+    @jwt_required()
+    def post(self):
+        try:
+            match = Match(**request.get_json())
+            if match.players > 100 or sum(match.player_dist1) > 50 or sum(match.player_dist2) > 50:
+                return handle_error("too many players", 400)
+            claims = get_jwt()
+            if Role.Admin.value not in claims["roles"]:
+                if Role.TeamManager.value not in claims["roles"]:
+                    return handle_error("you're not a team-manager", 403)
+
+                team_manager_of_one_clan = False
+                for c in claims["clans"]:
+                    if c in (match.clans1_ids + match.clans2_ids):
+                        team_manager_of_one_clan = True
+                        break
+                if not team_manager_of_one_clan:
+                    return handle_error("you're not a teammanager of one of the clans of this match", 403)
+
+            res = requests.post(
+                current_app.config["DISCORD_REPORT_MATCH_WEBHOOK"],
+                json=self.__build_webhook_payload(match, claims)
+            )
+            if res.status_code != 204:
+                return handle_error(f"error while posting result: {res.text}", 500)
+        except NotUniqueError:
+            return handle_error("match already exists in database", 400)
+        except ValidationError as e:
+            return handle_error(f"required field is empty: {e}")
+        except Exception as e:
+            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
+        else:
+            return get_response("", 201)
 
 ###############################################
 #                CONSOLE APIs                 #
@@ -278,8 +378,12 @@ class ConsoleMatchApi(Resource):
         else:
             return get_response({"message": f"created match with id: {match_id}"}, 201)
 
-    @jwt_required()
+    @admin_required()
     def patch(self, match_id):
+        """
+        TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
+        fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
+        """
         try:
             match = ConsoleMatch.objects.get(match_id=match_id)
             match.update(**request.get_json())
@@ -415,17 +519,17 @@ class ConsoleMatchesApi(Resource):
     def post(self):
         try:
             match = ConsoleMatch(**request.get_json())
+            match.conf1 = get_jwt_identity()
+            match.conf2 = ""
+            match.score_posted = False
             match = match.save()
-            need_conf = match.needs_confirmations()  # just to remind the user
-            # a match will always need at least the confirmation of the other team
-            # therefore, there is no point of creating the scores within the POST method
 
-            # temporary
             claims = get_jwt()
-            if not match.needs_confirmations() and not match.score_posted and claims["is_admin"]:
+            if Role.Admin.value in claims["roles"]:
+                match.conf2 = get_jwt_identity()
                 err = calc_scores(match, console=True)
-                if err is not None: raise ValueError
-                print("match confirmed")
+                if err is not None:
+                    raise ValueError
 
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
@@ -434,4 +538,4 @@ class ConsoleMatchesApi(Resource):
         except Exception as e:
             return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not need_conf}, 201)
+            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)

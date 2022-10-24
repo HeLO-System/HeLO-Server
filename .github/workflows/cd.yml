@@ -9,9 +9,7 @@ jobs:
   build_and_release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.CI_PERSONAL_TOKEN }}
+      - uses: actions/checkout@v3
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
@@ -20,22 +18,27 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ secrets.CI_USERNAME }}
-          password: ${{ secrets.CI_PERSONAL_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: github-repository to lowercase
+        run: |
+          echo "REPOSITORY_LOWERCASE=${REPOSITORY,,}" >> ${GITHUB_ENV}
+        env:
+          REPOSITORY: "${{ github.repository }}"
 
       - name: Build and push to Docker registries
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./
           platforms: linux/amd64
           file: ./Dockerfile
           push: true
-          tags: |
-            ghcr.io/helo-system/heloserver:latest
+          tags: ghcr.io/${{ env.REPOSITORY_LOWERCASE }}:latest
 
       - name: Invoke deployment hook
-        uses: distributhor/workflow-webhook@v2
+        uses: distributhor/workflow-webhook@v3
         env:
           webhook_url: ${{ secrets.DEPLOY_WEBHOOK }}
           webhook_secret: ${{ secrets.DEPLOY_SECRET }}
