@@ -1,18 +1,20 @@
 # rest/clans.py
-from flask import request
-from flask_restful import Resource
-from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError, OperationError, ValidationError, DoesNotExist, LookUpError
-from werkzeug.exceptions import BadRequest
-from mongoengine.queryset.visitor import Q
 from datetime import datetime
 
+from flask import request
+from flask_restful import Resource
 from models.clan import Clan
-from models.score import Score
 from models.console.console_clan import ConsoleClan
 from models.console.console_score import ConsoleScore
+from models.score import Score
+from mongoengine.errors import (DoesNotExist, LookUpError, NotUniqueError,
+                                OperationError, ValidationError)
+from mongoengine.queryset.visitor import Q
 from schemas.query_schemas import ClanQuerySchema, ScoreHistoryQuerySchema
-from ._common import get_response, handle_error, admin_required, empty, validate_schema
+from werkzeug.exceptions import BadRequest
+
+from ._common import (admin_required, empty, get_response, handle_error,
+                      validate_schema)
 
 # https://stackoverflow.com/questions/30779584/flask-restful-passing-parameters-to-get-request
 # https://www.programcreek.com/python/example/108223/marshmallow.validate.OneOf
@@ -50,7 +52,7 @@ class ClanApi(Resource):
 
 
     # update clan by object id
-    @jwt_required()
+    @admin_required()
     def put(self, oid):
         try:
             # validation, if request contains all required fields and types
@@ -74,7 +76,7 @@ class ClanApi(Resource):
             return get_response({"message": f"created clan with id: {oid}"}, 201)
 
 
-    @jwt_required()
+    @admin_required()
     def patch(self, oid):
         try:
             clan = Clan.objects.get(id=oid)
@@ -245,10 +247,6 @@ class DiscordRoleApi(Resource):
             return handle_error(f"error getting clan from database, clan not found by oid: {rid}, terminated with error: {e}", 500)
 
 
-
-
-
-
 ###############################################
 #                CONSOLE APIs                 #
 ###############################################
@@ -277,7 +275,7 @@ class ConsoleClanApi(Resource):
 
 
     # update clan by object id
-    @jwt_required()
+    @admin_required()
     def put(self, oid):
         try:
             # validation, if request contains all required fields and types
@@ -301,7 +299,7 @@ class ConsoleClanApi(Resource):
             return get_response({"message": f"created clan with id: {oid}"}, 201)
 
 
-    @jwt_required()
+    @admin_required()
     def patch(self, oid):
         try:
             clan = ConsoleClan.objects.get(id=oid)
