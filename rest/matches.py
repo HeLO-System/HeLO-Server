@@ -460,7 +460,6 @@ class ConsoleMatchesApi(Resource):
                 err = calc_scores(match, console=True)
                 if err is not None:
                     raise ValueError
-                print("console match confirmed")
 
         except NotUniqueError:
             return handle_error(f"match already exists in database", 400)
