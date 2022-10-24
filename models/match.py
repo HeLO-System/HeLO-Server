@@ -14,7 +14,7 @@ from database.db import db, CustomQuerySet
 class Type(enum.Enum):
     Friendly = "Friendly"
     Competitive = "Competitive"
-    Sweaty = "Sweaty"
+    Tournament = "Tournament"
 
 
 class Match(db.Document):
@@ -82,6 +82,6 @@ class Match(db.Document):
         elif self.factor == 2.0:
             return Type.Competetive
         elif self.factor == 2.4:
-            return Type.Sweaty
+            return Type.Tournament
         else:
             return None
