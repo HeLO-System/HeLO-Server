@@ -80,8 +80,20 @@ class Match(db.Document):
         if self.factor == 0.6:
             return Type.Friendly
         elif self.factor == 2.0:
-            return Type.Competetive
+            return Type.Competitive
         elif self.factor == 2.4:
             return Type.Tournament
         else:
             return None
+
+    def can_be_deleted(self, user_id: str, user_clans: list[str]) -> bool:
+        is_clan1_member = False
+        for r in user_clans:
+            if r in self.clans1_ids:
+                is_clan1_member = True
+        is_clan2_member = False
+        for r in user_clans:
+            if r in self.clans2_ids:
+                is_clan2_member = True
+
+        return not self.score_posted and (is_clan1_member or is_clan2_member or self.conf1 == user_id and self.conf2 == user_id)

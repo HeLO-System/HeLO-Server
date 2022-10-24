@@ -114,18 +114,10 @@ class MatchApi(Resource):
             is_admin = Role.Admin.value in claims["roles"]
             match = Match.objects.get(match_id=match_id)
 
-            is_clan1_member = False
-            for r in claims["clans"]:
-                if r in match.clans1_ids and Role.TeamManager.value in claims["roles"]:
-                    is_clan1_member = True
-            is_clan2_member = False
-            for r in claims["clans"]:
-                if r in match.clans2_ids and Role.TeamManager.value in claims["roles"]:
-                    is_clan2_member = True
+            if Role.TeamManager.value not in claims["roles"] and Role.Admin.value not in claims["roles"]:
+                return handle_error("object does not exist", 404)
 
-            if match.score_posted and not is_admin:
-                return handle_error("the match is already posted", 403)
-            if match.conf1 != get_jwt_identity() and match.conf2 != get_jwt_identity() and not is_clan1_member and not is_clan2_member and not is_admin:
+            if not match.can_be_deleted(get_jwt_identity(), claims["clans"]) and Role.Admin.value not in claims["roles"]:
                 return handle_error("object does not exist", 404)
 
             match.delete()
