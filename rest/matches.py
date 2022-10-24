@@ -457,7 +457,7 @@ class ConsoleMatchesApi(Resource):
             claims = get_jwt()
             if Role.Admin.value in claims["roles"]:
                 match.conf2 = get_jwt_identity()
-                err = calc_scores(match)
+                err = calc_scores(match, console=True)
                 if err is not None:
                     raise ValueError
 
