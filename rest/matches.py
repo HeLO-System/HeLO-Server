@@ -448,7 +448,7 @@ class ConsoleMatchesApi(Resource):
     @jwt_required()
     def post(self):
         try:
-            match = Match(**request.get_json())
+            match = ConsoleMatch(**request.get_json())
             match.conf1 = get_jwt_identity()
             match.conf2 = ""
             match.score_posted = False
