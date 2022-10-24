@@ -13,7 +13,7 @@ from database.db import db, CustomQuerySet
 
 class Type(enum.Enum):
     Friendly = "Friendly"
-    Competetive = "Competetive"
+    Competitive = "Competitive"
     Sweaty = "Sweaty"
 
 
