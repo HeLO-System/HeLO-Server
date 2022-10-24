@@ -20,7 +20,6 @@ from models.user import Role
 from schemas.query_schemas import MatchQuerySchema
 from ._common import get_response, handle_error, get_jwt, empty, validate_schema, admin_required
 
-
 ###############################################
 #                   PC APIs                   #
 ###############################################
@@ -28,19 +27,10 @@ from ._common import get_response, handle_error, get_jwt, empty, validate_schema
 class MatchApi(Resource):
 
     # get by object id
-    def get(self, oid):
+    def get(self, match_id):
         try:
-            try:
-                match = Match.objects.get(id=oid)
-                return get_response(match)
-            except ValidationError:
-                match = Match.objects.search_text(oid).first()
-                return get_response(match)
-
-        except AttributeError:
-            return handle_error(
-                f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.",
-                400)
+            match = Match.objects.get(match_id=match_id)
+            return get_response(match)
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
@@ -48,42 +38,40 @@ class MatchApi(Resource):
 
     # update match by object id
     @jwt_required()
-    def put(self, oid):
+    def put(self, match_id):
         try:
             # validation, if request contains all required fields and types
             match = Match(**request.get_json())
             match.validate()
             # must be a QuerySet, therefore no get()
-            match_qs = Match.objects(id=oid)
+            match_qs = Match.objects(match_id=match_id)
             res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             # load Match object for the logic instead of working with the QuerySet
-            match = Match.objects.get(id=oid)
-
+            match = Match.objects.get(match_id=match_id)
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
                 if err is not None: raise ValueError
                 print("match confirmed")
 
             if res.raw_result.get("updatedExisting"):
-                return get_response({"message": f"replaced match with id: {oid}"}, 200)
-
+                return get_response({"message": f"replaced match with id: {match_id}"}, 200)
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
-        except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
+        except ValueError as err:
+            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
         except RuntimeError:
             return handle_error(f"error updating match - a clan cannot play against itself", 400)
         else:
-            return get_response({"message": f"created match with id: {oid}"}, 201)
+            return get_response({"message": f"created match with id: {match_id}"}, 201)
 
     @admin_required()
-    def patch(self, oid):
+    def patch(self, match_id):
         """
         TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
         fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
         """
         try:
-            match = Match.objects.get(id=oid)
+            match = Match.objects.get(match_id=match_id)
             match.update(**request.get_json())
             match.reload()
 
@@ -103,9 +91,9 @@ class MatchApi(Resource):
                     print("match and scores recalculated")
 
         except DoesNotExist:
-            return handle_error(f"error updating match in database, match not found by oid: {oid}", 404)
-        except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
+            return handle_error(f"error updating match in database, match not found by oid: {match_id}", 404)
+        except ValueError as err:
+            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
         except RuntimeError:
             return handle_error(f"error updating match - a clan cannot play against itself", 400)
         else:
@@ -113,10 +101,10 @@ class MatchApi(Resource):
 
     # update match by object id
     @jwt_required()
-    def delete(self, oid):
+    def delete(self, match_id):
         try:
-            match = Match.objects.get(id=oid)
-            match = match.delete()
+            match = Match.objects.get(match_id=match_id)
+            match.delete()
 
         except ValidationError:
             return handle_error("not a valid object id", 400)
@@ -227,6 +215,7 @@ class MatchesApi(Resource):
                 },
             })
 
+    # add new match
     @jwt_required()
     def post(self):
         try:
@@ -339,7 +328,6 @@ class MatchesNotificationApi(Resource):
         else:
             return get_response("", 201)
 
-
 ###############################################
 #                CONSOLE APIs                 #
 ###############################################
@@ -348,18 +336,14 @@ class MatchesNotificationApi(Resource):
 class ConsoleMatchApi(Resource):
 
     # get by object id
-    def get(self, oid):
+    def get(self, match_id):
         try:
-            try:
-                match = ConsoleMatch.objects.get(id=oid)
-                return get_response(match)
-            except ValidationError:
-                match = ConsoleMatch.objects.search_text(oid).first()
-                return get_response(match)
+            match = ConsoleMatch.objects.get(match_id=match_id)
+            return get_response(match)
 
         except AttributeError:
             return handle_error(
-                f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.",
+                f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{match_id}', but couldn't find any.",
                 400)
         except DoesNotExist:
             return handle_error("object does not exist", 404)
@@ -368,42 +352,40 @@ class ConsoleMatchApi(Resource):
 
     # update match by object id
     @jwt_required()
-    def put(self, oid):
+    def put(self, match_id):
         try:
             # validation, if request contains all required fields and types
             match = ConsoleMatch(**request.get_json())
             match.validate()
             # must be a QuerySet, therefore no get()
-            match_qs = ConsoleMatch.objects(id=oid)
+            match_qs = ConsoleMatch.objects(match_id=match_id)
             res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
             # load Match object for the logic instead of working with the QuerySet
-            match = ConsoleMatch.objects.get(id=oid)
-
+            match = ConsoleMatch.objects.get(match_id=match_id)
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match, console=True)
                 if err is not None: raise ValueError
                 print("match confirmed")
 
             if res.raw_result.get("updatedExisting"):
-                return get_response({"message": f"replaced match with id: {oid}"}, 200)
-
+                return get_response({"message": f"replaced match with id: {match_id}"}, 200)
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
-        except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
+        except ValueError as err:
+            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
         except RuntimeError:
             return handle_error(f"error updating match - a clan cannot play against itself", 400)
         else:
-            return get_response({"message": f"created match with id: {oid}"}, 201)
+            return get_response({"message": f"created match with id: {match_id}"}, 201)
 
     @admin_required()
-    def patch(self, oid):
+    def patch(self, match_id):
         """
         TODO: This method could, in it's current form, be used to bypass match confirmation (by passing in the conf1 and conf2
         fields in the patch request. Hence, to prevent this, this method is for admins only, for now.
         """
         try:
-            match = ConsoleMatch.objects.get(id=oid)
+            match = ConsoleMatch.objects.get(match_id=match_id)
             match.update(**request.get_json())
             match.reload()
 
@@ -423,9 +405,9 @@ class ConsoleMatchApi(Resource):
                     print("match and scores recalculated")
 
         except DoesNotExist:
-            return handle_error(f"error updating match in database, match not found by oid: {oid}", 404)
-        except ValueError:
-            return handle_error(f"{err} - error updating match with id: {oid}, calculations went wrong", 400)
+            return handle_error(f"error updating match in database, match not found by oid: {match_id}", 404)
+        except ValueError as err:
+            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
         except RuntimeError:
             return handle_error(f"error updating match - a clan cannot play against itself", 400)
         else:
@@ -433,10 +415,10 @@ class ConsoleMatchApi(Resource):
 
     # update match by object id
     @jwt_required()
-    def delete(self, oid):
+    def delete(self, match_id):
         try:
-            match = ConsoleMatch.objects.get(id=oid)
-            match = match.delete()
+            match = ConsoleMatch.objects.get(match_id=match_id)
+            match.delete()
 
         except ValidationError:
             return handle_error("not a valid object id", 400)

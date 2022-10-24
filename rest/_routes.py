@@ -22,7 +22,7 @@ def initialize_routes(api, discord):
     api.add_resource(ClanApi, '/clan/<oid>')
     api.add_resource(ClansApi, '/clans')
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
-    api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
+    api.add_resource(MatchApi, '/match/<match_id>')
     api.add_resource(MatchesApi, '/matches')
     api.add_resource(MatchesNotificationApi, '/matches-notifications')
     api.add_resource(EventApi, '/event/<oid>')
@@ -39,7 +39,7 @@ def initialize_routes(api, discord):
     api.add_resource(ConsoleClanApi, '/console/clan/<oid>')
     api.add_resource(ConsoleClansApi, '/console/clans')
     api.add_resource(ConsoleScoreHistoryApi, '/console/clan/<oid>/score_history')
-    api.add_resource(ConsoleMatchApi, '/console/match/<oid>')
+    api.add_resource(ConsoleMatchApi, '/console/match/<match_id>')
     api.add_resource(ConsoleMatchesApi, '/console/matches')
     api.add_resource(ConsoleScoresApi, '/console/scores')
     api.add_resource(ConsoleScoreApi, '/console/score/<oid>')
