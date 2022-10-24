@@ -41,6 +41,7 @@ else:
 
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["DISCORD_REPORT_MATCH_WEBHOOK"] = os.environ.get("DISCORD_REPORT_MATCH_WEBHOOK")
 # needs to be true for custom error messages
 app.config["PROPAGATE_EXCEPTIONS"] = True
 

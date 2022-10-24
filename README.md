@@ -16,6 +16,7 @@ This is a non-conclusive overview of environment variables and their use cases, 
 * `DISCORD_AUTH_GUILD_ID`: The Guild ID from which authorization data is used (roles). This is usually the HeLO discord Guild (get it from the Discord client; right click -> Copy ID)
 * `DISCORD_AUTH_ADMIN_ROLE`: The Discord Role ID of a role with in the `DISCORD_AUTH_GUILD_ID` guild, which makes a logged-in user an admin in the HeLO-System
 * `DISCORD_AUTH_TEAM_MANAGER_ROLE`: The Discord Role ID of a role with in the `DISCORD_AUTH_GUILD_ID` guild, which makes a logged-in user a team manager in the HeLO-System
+* `DISCORD_REPORT_MATCH_WEBHOOK`: A Discord Webhook URL to report new matches into
 
 # Local setup
 

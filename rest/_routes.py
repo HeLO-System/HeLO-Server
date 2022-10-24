@@ -4,7 +4,7 @@ from rest.clans import ClansApi, ClanApi, ScoreHistoryApi, \
 from rest.clans import DiscordRoleApi
 from rest.events import EventApi, EventsApi
 from rest.matches import MatchApi, MatchesApi, \
-    ConsoleMatchApi, ConsoleMatchesApi
+    ConsoleMatchApi, ConsoleMatchesApi, MatchesNotificationApi
 from rest.scores import ScoreApi, ScoresApi, \
     ConsoleScoreApi, ConsoleScoresApi
 from rest.search import SearchApi
@@ -24,6 +24,7 @@ def initialize_routes(api, discord):
     api.add_resource(ScoreHistoryApi, '/clan/<oid>/score_history')
     api.add_resource(MatchApi, '/match/<oid>')  # oid is the unique identifier from MongoDB, "_id"
     api.add_resource(MatchesApi, '/matches')
+    api.add_resource(MatchesNotificationApi, '/matches-notifications')
     api.add_resource(EventApi, '/event/<oid>')
     api.add_resource(EventsApi, '/events')
     api.add_resource(ScoresApi, '/scores')

@@ -1,20 +1,23 @@
 # rest/matches.py
 import json
+from datetime import datetime
+from urllib.parse import urlparse
 
-from flask import request
-from flask_restful import Resource
+import requests
+from flask import request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_restful import Resource
 from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
 from mongoengine.queryset.visitor import Q
-from datetime import datetime
 from werkzeug.exceptions import BadRequest
 
-from models.match import Match
-from models.console.console_match import ConsoleMatch
-from models.user import Role
-from schemas.query_schemas import MatchQuerySchema
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
+from models.clan import Clan
+from models.console.console_match import ConsoleMatch
+from models.match import Match, Type
+from models.user import Role
+from schemas.query_schemas import MatchQuerySchema
 from ._common import get_response, handle_error, get_jwt, empty, validate_schema, admin_required
 
 
@@ -35,12 +38,13 @@ class MatchApi(Resource):
                 return get_response(match)
 
         except AttributeError:
-            return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.", 400)
+            return handle_error(
+                f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.",
+                400)
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
-
 
     # update match by object id
     @jwt_required()
@@ -92,7 +96,8 @@ class MatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate:
-                if not claims["is_admin"]: raise OperationError
+                if not claims["is_admin"]:
+                    raise OperationError
                 else:
                     start_recalculation(match)
                     print("match and scores recalculated")
@@ -114,19 +119,16 @@ class MatchApi(Resource):
             match = match.delete()
 
         except ValidationError:
-                return handle_error("not a valid object id", 400)
+            return handle_error("not a valid object id", 400)
         except DoesNotExist:
-                return handle_error("object does not exist", 404)
+            return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
         else:
             return get_response("", 204)
 
 
-
 class MatchesApi(Resource):
-
-    # get all or filtered by match id
     def get(self):
         try:
             validate_schema(MatchQuerySchema(), request.args)
@@ -251,6 +253,92 @@ class MatchesApi(Resource):
             return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
 
 
+class MatchesNotificationApi(Resource):
+    """
+    Temporary API to report matches to the discord report-match channel. This API will be removed, once reporting a match
+    is done using the MatchesApi match report workflow.
+    """
+
+    def __clan_player_count(self, distribution: list[int], clans: list[Clan], player_count: int or None) -> str:
+        if distribution:
+            res = " & ".join(
+                ["**" + clan.tag + "** (" + str(distribution[i]) + ")" for i, clan in enumerate(clans)]
+            )
+            if len(distribution) > 1:
+                res += " => " + str(sum(distribution))
+        else:
+            res = " & ".join(["**" + clan.tag + "**" for clan in clans]) + "(" + player_count + ")"
+
+        return res
+
+    def __build_webhook_payload(self, match: Match, posting_user: dict) -> dict:
+        event_comment = ""
+        if match.type == Type.Competetive:
+            event_comment = " (%s)" % match.event
+
+        axis = self.__clan_player_count(match.player_dist1, Clan.objects(id__in=match.clans1_ids), match.players)
+        allies = self.__clan_player_count(match.player_dist2, Clan.objects(id__in=match.clans2_ids), match.players)
+
+        caps = "/".join(match.strongpoints)
+        fields = [
+            f"**{match.type.value}{event_comment}**",
+            match.date,
+            f"Axis: {axis}",
+            f"Allies: {allies}",
+            f"Result: **{match.caps1}:{match.caps2}** in **{match.duration}min**",
+            f"Map: **{match.map}**",
+            f"Caps: {caps}",
+        ]
+        if match.stream_url:
+            fields.append(f"Stream: [{urlparse(match.stream_url).hostname}]({match.stream_url})")
+
+        return {
+            "embeds": [{
+                "color": 16750848,
+                "author": {
+                    "name": posting_user["friendly_name"],
+                    "icon_url": posting_user["avatar"],
+                },
+                "title": match.match_id,
+                "url": "https://helo-system.de/matches/" + match.match_id,
+                "description": "\n".join(fields),
+            }],
+        }
+
+    @jwt_required()
+    def post(self):
+        try:
+            match = Match(**request.get_json())
+            if match.players > 100 or sum(match.player_dist1) > 50 or sum(match.player_dist2) > 50:
+                return handle_error("too many players", 400)
+            claims = get_jwt()
+            if Role.Admin.value not in claims["roles"]:
+                if Role.TeamManager.value not in claims["roles"]:
+                    return handle_error("you're not a team-manager", 403)
+
+                team_manager_of_one_clan = False
+                for c in claims["clans"]:
+                    if c in (match.clans1_ids + match.clans2_ids):
+                        team_manager_of_one_clan = True
+                        break
+                if not team_manager_of_one_clan:
+                    return handle_error("you're not a teammanager of one of the clans of this match", 403)
+
+            res = requests.post(
+                current_app.config["DISCORD_REPORT_MATCH_WEBHOOK"],
+                json=self.__build_webhook_payload(match, claims)
+            )
+            if res.status_code != 204:
+                return handle_error(f"error while posting result: {res.text}", 500)
+        except NotUniqueError:
+            return handle_error("match already exists in database", 400)
+        except ValidationError as e:
+            return handle_error(f"required field is empty: {e}")
+        except Exception as e:
+            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
+        else:
+            return get_response("", 201)
+
 
 ###############################################
 #                CONSOLE APIs                 #
@@ -270,12 +358,13 @@ class ConsoleMatchApi(Resource):
                 return get_response(match)
 
         except AttributeError:
-            return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.", 400)
+            return handle_error(
+                f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{oid}', but couldn't find any.",
+                400)
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
-
 
     # update match by object id
     @jwt_required()
@@ -327,7 +416,8 @@ class ConsoleMatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate:
-                if not claims["is_admin"]: raise OperationError
+                if not claims["is_admin"]:
+                    raise OperationError
                 else:
                     start_recalculation(match, console=True)
                     print("match and scores recalculated")
@@ -349,14 +439,13 @@ class ConsoleMatchApi(Resource):
             match = match.delete()
 
         except ValidationError:
-                return handle_error("not a valid object id", 400)
+            return handle_error("not a valid object id", 400)
         except DoesNotExist:
-                return handle_error("object does not exist", 404)
+            return handle_error("object does not exist", 404)
         except Exception as e:
             return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
         else:
             return get_response("", 204)
-
 
 
 class ConsoleMatchesApi(Resource):
@@ -442,7 +531,6 @@ class ConsoleMatchesApi(Resource):
             return handle_error(f"error getting matches, terminated with error: {e}", 500)
         else:
             return get_response(matches)
-
 
     # add new match
     @jwt_required()

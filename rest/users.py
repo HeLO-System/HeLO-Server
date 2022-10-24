@@ -1,6 +1,7 @@
 import datetime
 
 from flask import current_app, redirect, request
+from flask_discord import models
 from flask_jwt_extended import create_access_token
 from flask_restful import Resource
 from mongoengine import DoesNotExist
@@ -50,11 +51,11 @@ class DiscordCallback(Resource):
             else:
                 try:
                     clan = Clan.objects.get(role_id=r)
-                    helo_clans.append(clan.tag)
+                    helo_clans.append(str(clan.id))
                 except DoesNotExist:
                     continue
                 except Exception:
-                    return handle_error(f"error resolving clan membership", 500)
+                    raise Exception("error resolving clan membership")
 
         return helo_roles, helo_clans
 
@@ -62,17 +63,22 @@ class DiscordCallback(Resource):
         state = self.discord.callback()
         if state.get('redirect_uri') is None:
             return 'bad_request', 400
-        user = self.discord.fetch_user()
+        user: models.user = self.discord.fetch_user()
         guild = self.__resolve_guild(user)
 
         if guild is None:
             return 'not in guild', 401
 
-        helo_roles, helo_clans = self.__resolve_roles_clans(guild)
+        try:
+            helo_roles, helo_clans = self.__resolve_roles_clans(guild)
+        except Exception as e:
+            return handle_error(e, 500)
         access_token = create_access_token(
             identity=user.id,
             expires_delta=datetime.timedelta(hours=8),
             additional_claims={
+                'friendly_name': user.name,
+                'avatar': user.avatar_url or user.default_avatar_url,
                 'roles': helo_roles,
                 'clans': helo_clans,
             }
