@@ -1,7 +1,7 @@
 # rest/search.py
 
 from flask_restful import Resource
-from flask import request
+from flask import request, current_app
 from werkzeug.exceptions import BadRequest
 
 from logic._getter import get_model
@@ -10,7 +10,6 @@ from ._common import get_response, validate_schema, handle_error
 
 
 class SearchApi(Resource):
-
     def get(self):
         try:
             validate_schema(SearchQuerySchema(), request.args)
@@ -29,12 +28,22 @@ class SearchApi(Resource):
             # https://www.tutorialspoint.com/mongoengine/mongoengine_text_search.htm
             # https://docs.mongoengine.org/guide/text-indexes.html
             # https://stackoverflow.com/questions/1863399/mongodb-is-it-possible-to-make-a-case-insensitive-query
-            # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htm
-            cls = get_model(t)
+            # https://www.tutorialspoint.com/mongoengine/mongoengine_indexes.htms
+            cls = get_model(t, current_app.config["IS_CONSOLE_API"])
             if desc is None:
-                docs = cls.objects.search_text(q).limit(limit).skip(offset).order_by(f"+{sort_by}")
+                docs = (
+                    cls.objects.search_text(q)
+                    .limit(limit)
+                    .skip(offset)
+                    .order_by(f"+{sort_by}")
+                )
             else:
-                docs = cls.objects.search_text(q).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                docs = (
+                    cls.objects.search_text(q)
+                    .limit(limit)
+                    .skip(offset)
+                    .order_by(f"-{sort_by}")
+                )
 
         except BadRequest as e:
             # TODO: better error response
@@ -43,24 +52,18 @@ class SearchApi(Resource):
             return {
                 "error": "query paramter is not valid or got an illegal value",
                 "query paramters": {
-                    "select": {
-                        "mandatory": True,
-                        "allowed_values": "any string"
-                    },
+                    "select": {"mandatory": True, "allowed_values": "any string"},
                     "type": {
                         "mandatory": True,
-                        "allowed_values": ["clan", "match", "score"]
+                        "allowed_values": ["clan", "match", "score"],
                     },
-                    "limit": {
-                        "mandatory": False,
-                        "allowed_value": "positive integers"
-                    },
+                    "limit": {"mandatory": False, "allowed_value": "positive integers"},
                     "offset": {
                         "mandatory": False,
-                        "allowed_value": "positive integers"
-                    }
+                        "allowed_value": "positive integers",
+                    },
                 },
-                "example": ".../search?select=core&type=match&limit=5"
+                "example": ".../search?select=core&type=match&limit=5",
             }, 422
 
         else:
