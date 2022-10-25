@@ -4,21 +4,23 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-from flask import request, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import current_app, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_restful import Resource
-from mongoengine.errors import DoesNotExist, OperationError, NotUniqueError, LookUpError, ValidationError
-from mongoengine.queryset.visitor import Q
-from werkzeug.exceptions import BadRequest
-
 from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
 from models.clan import Clan
 from models.console.console_match import ConsoleMatch
 from models.match import Match, Type
 from models.user import Role
+from mongoengine.errors import (DoesNotExist, LookUpError, NotUniqueError,
+                                OperationError, ValidationError)
+from mongoengine.queryset.visitor import Q
 from schemas.query_schemas import MatchQuerySchema
-from ._common import get_response, handle_error, get_jwt, empty, validate_schema, admin_required
+from werkzeug.exceptions import BadRequest
+
+from ._common import (admin_required, empty, get_jwt, get_response,
+                      handle_error, validate_schema)
 
 ###############################################
 #                   PC APIs                   #
@@ -112,12 +114,13 @@ class MatchApi(Resource):
         try:
             claims = get_jwt()
             is_admin = Role.Admin.value in claims["roles"]
+            is_teammanager = Role.TeamManager.value in claims["roles"]
             match = Match.objects.get(match_id=match_id)
 
-            if Role.TeamManager.value not in claims["roles"] and Role.Admin.value not in claims["roles"]:
+            if not is_admin and not is_teammanager:
                 return handle_error("object does not exist", 404)
 
-            if not match.can_be_deleted(get_jwt_identity(), claims["clans"]) and Role.Admin.value not in claims["roles"]:
+            if not match.can_be_deleted(get_jwt_identity(), claims["clans"]) and not is_admin:
                 return handle_error("object does not exist", 404)
 
             match.delete()
@@ -232,7 +235,7 @@ class MatchesApi(Resource):
             })
 
     # add new match
-    @jwt_required()
+    @admin_required()
     def post(self):
         try:
             match = Match(**request.get_json())
@@ -264,7 +267,7 @@ class MatchesNotificationApi(Resource):
     is done using the MatchesApi match report workflow.
     """
 
-    def __clan_player_count(self, distribution: list[int], clans: list[Clan], player_count: int or None) -> str:
+    def __clan_player_count(self, distribution: 'list[int]', clans: 'list[Clan]', player_count: int or None) -> str:
         if distribution:
             res = " & ".join(
                 ["**" + clan.tag + "** (" + str(distribution[i]) + ")" for i, clan in enumerate(clans)]
@@ -310,7 +313,7 @@ class MatchesNotificationApi(Resource):
             }],
         }
 
-    @jwt_required()
+    @admin_required()
     def post(self):
         try:
             match = Match(**request.get_json())
@@ -367,7 +370,7 @@ class ConsoleMatchApi(Resource):
             return handle_error(f"error getting match from database, terminated with error: {e}", 500)
 
     # update match by object id
-    @jwt_required()
+    @admin_required()
     def put(self, match_id):
         try:
             # validation, if request contains all required fields and types
@@ -430,7 +433,7 @@ class ConsoleMatchApi(Resource):
             return get_response("", 204)
 
     # update match by object id
-    @jwt_required()
+    @admin_required()
     def delete(self, match_id):
         try:
             match = ConsoleMatch.objects.get(match_id=match_id)
@@ -531,7 +534,7 @@ class ConsoleMatchesApi(Resource):
             return get_response(matches)
 
     # add new match
-    @jwt_required()
+    @admin_required()
     def post(self):
         try:
             match = ConsoleMatch(**request.get_json())

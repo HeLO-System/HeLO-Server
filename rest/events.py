@@ -1,10 +1,10 @@
 # rest/events.py
 from flask import request
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required
-from mongoengine.errors import NotUniqueError
 from models.event import Event
-from ._common import get_response, handle_error
+from mongoengine.errors import NotUniqueError
+
+from ._common import admin_required, get_response, handle_error
 
 
 class EventApi(Resource):
@@ -19,7 +19,7 @@ class EventApi(Resource):
 
 
     # update event by object id
-    @jwt_required()
+    @admin_required()
     def put(self, oid):
         try:
             event = Event.objects.get(id=oid)
@@ -32,7 +32,7 @@ class EventApi(Resource):
             return handle_error(f"error updating event in database, event not found by oid: {oid}")
 
     # update event by object id
-    @jwt_required()
+    @admin_required()
     def delete(self, oid):
         try:
             event = Event.objects.get(id=oid)
@@ -66,7 +66,7 @@ class EventsApi(Resource):
 
 
     # add new event
-    @jwt_required()
+    @admin_required()
     def post(self):
         try:
             event = Event(**request.get_json())
