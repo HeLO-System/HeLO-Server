@@ -1,15 +1,16 @@
 # rest/scores.py
 from flask import request
 from flask_restful import Resource
+from models.console.console_score import ConsoleScore
+from models.score import Score
 from mongoengine import Q
-from mongoengine.errors import LookUpError, ValidationError, DoesNotExist, OperationError
+from mongoengine.errors import (DoesNotExist, LookUpError, OperationError,
+                                ValidationError)
+from schemas.query_schemas import ScoreQuerySchema
 from werkzeug.exceptions import BadRequest
 
-from models.score import Score
-from models.console.console_score import ConsoleScore
-from schemas.query_schemas import ScoreQuerySchema
-from ._common import get_response, handle_error, empty, admin_required, validate_schema
-
+from ._common import (admin_required, empty, get_response, handle_error,
+                      validate_schema)
 
 ###############################################
 #                   PC APIs                   #
@@ -118,7 +119,7 @@ class ScoresApi(Resource):
             if not empty(match_id): filter &= Q(match_id__icontains=match_id)
             if not empty(num): filter &= Q(num_matches=num)
             if not empty(num_from): filter &= Q(num_matches__gte=num_from)
-            if not empty(num_to): filter &= Q(num_matches__lte=num_from)
+            if not empty(num_to): filter &= Q(num_matches__lte=num_to)
             if not empty(score): filter &= Q(score=score)
             if not empty(score_from): filter &= Q(score__gte=score_from)
             if not empty(score_to): filter &= Q(score__lte=score_from)
