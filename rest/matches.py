@@ -1,6 +1,7 @@
 # rest/matches.py
 import json
 from datetime import datetime
+from re import M
 from urllib.parse import urlparse
 
 import requests
@@ -11,6 +12,7 @@ from logic.calculations import calc_scores
 from logic.recalculations import start_recalculation
 from models.clan import Clan
 from models.console.console_match import ConsoleMatch
+from models.console.console_score import ConsoleScore
 from models.match import Match, Type
 from models.score import Score
 from models.user import Role
@@ -35,35 +37,40 @@ from ._common import (
 )
 
 
-def get_match_score_diff(match_id, clan_id) -> int:
-    match_score: Score = Score.objects.get(match_id=match_id, clan=clan_id)
+def get_match_score_diff(match_id: str, clan_id: str, console: bool) -> float:
+    score: Type[Score] | Type[ConsoleScore] = Score if not console else ConsoleScore
+
+    match_score: Type[Score] | Type[ConsoleScore] = score.objects.get(
+        match_id=match_id, clan=clan_id
+    )
     try:
-        last_score: Score = Score.objects.get(
+        last_score: int = score.objects.get(
             clan=clan_id, num_matches=match_score.num_matches - 1
         ).score
     except DoesNotExist:
-        last_score = 600
-    return match_score.score - last_score
+        last_score = 1000 if console else 600
+    return float(match_score.score - last_score)
 
 
-def transform_match(match):
+def transform_match(match, console=False):
     for i in range(1, 3):
+        players: int = match[f"players{i}"] if console else match["players"]
+
         match[f"clans{i}"] = [
             {
                 "id": id,
-                "score_diff": get_match_score_diff(match["match_id"], id)
+                "score_diff": get_match_score_diff(match["match_id"], id, console)
                 if match["score_posted"]
                 else None,
                 "players": match[f"player_dist{i}"][j]
                 if match[f"player_dist{i}"][j:]
-                else match["players"],
+                else players,
             }
             for j, id in enumerate(match[f"clans{i}_ids"])
         ]
 
         del match[f"clans{i}_ids"]
         del match[f"player_dist{i}"]
-
     return match
 
 
@@ -75,7 +82,7 @@ def transform_match(match):
 class MatchApi(Resource):
     def get(self, match_id):
         try:
-            match: Match = Match.objects.get(match_id=match_id)
+            match: Match = Match.objects.get(match_id=match_id).to_dict()
 
             return get_response(transform_match(match))
         except DoesNotExist:
@@ -313,7 +320,6 @@ class MatchesApi(Resource):
                 f"error getting matches, terminated with error: {e}", 500
             )
         else:
-            print(len(json.loads(matches.to_json())))
             return get_response(
                 {
                     "matches": [
@@ -487,8 +493,9 @@ class ConsoleMatchApi(Resource):
     # get by object id
     def get(self, match_id):
         try:
-            match = ConsoleMatch.objects.get(match_id=match_id)
-            return get_response(match)
+            match: ConsoleMatch = ConsoleMatch.objects.get(match_id=match_id).to_dict()
+
+            return get_response(transform_match(match, True))
 
         except AttributeError:
             return handle_error(
@@ -684,23 +691,12 @@ class ConsoleMatchesApi(Resource):
             if not empty(date_to):
                 filter &= Q(date__lte=date_to)
 
+            filtered = ConsoleMatch.objects(filter)
+            limited = filtered.only(*fields).limit(limit).skip(offset)
             if not empty(desc) and desc:
-                matches = (
-                    ConsoleMatch.objects(filter)
-                    .only(*fields)
-                    .limit(limit)
-                    .skip(offset)
-                    .order_by(f"-{sort_by}")
-                )
-                return get_response(matches)
-
-            matches = (
-                ConsoleMatch.objects(filter)
-                .only(*fields)
-                .limit(limit)
-                .skip(offset)
-                .order_by(f"+{sort_by}")
-            )
+                matches = limited.order_by(f"-{sort_by}")
+            else:
+                matches = limited.order_by(f"+{sort_by}")
 
         except BadRequest as e:
             # TODO: better error response
@@ -712,7 +708,19 @@ class ConsoleMatchesApi(Resource):
                 f"error getting matches, terminated with error: {e}", 500
             )
         else:
-            return get_response(matches)
+            return get_response(
+                {
+                    "matches": [
+                        transform_match(match, True)
+                        for match in json.loads(matches.to_json())
+                    ],
+                    "meta": {
+                        "count": matches.count(True),
+                        "offset": offset,
+                        "total_count": filtered.count(False),
+                    },
+                }
+            )
 
     # add new match
     @admin_required()
