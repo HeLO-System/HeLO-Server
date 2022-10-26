@@ -12,29 +12,78 @@ from logic.recalculations import start_recalculation
 from models.clan import Clan
 from models.console.console_match import ConsoleMatch
 from models.match import Match, Type
+from models.score import Score
 from models.user import Role
-from mongoengine.errors import (DoesNotExist, LookUpError, NotUniqueError,
-                                OperationError, ValidationError)
+from mongoengine.errors import (
+    DoesNotExist,
+    LookUpError,
+    NotUniqueError,
+    OperationError,
+    ValidationError,
+)
 from mongoengine.queryset.visitor import Q
 from schemas.query_schemas import MatchQuerySchema
 from werkzeug.exceptions import BadRequest
 
-from ._common import (admin_required, empty, get_jwt, get_response,
-                      handle_error, validate_schema)
+from ._common import (
+    admin_required,
+    empty,
+    get_jwt,
+    get_response,
+    handle_error,
+    validate_schema,
+)
+
+
+def get_match_score_diff(match_id, clan_id) -> int:
+    match_score: Score = Score.objects.get(match_id=match_id, clan=clan_id)
+    try:
+        last_score: Score = Score.objects.get(
+            clan=clan_id, num_matches=match_score.num_matches - 1
+        ).score
+    except DoesNotExist:
+        last_score = 600
+    return match_score.score - last_score
+
+
+def transform_match(match):
+    for i in range(1, 3):
+        match[f"clans{i}"] = [
+            {
+                "id": id,
+                "score_diff": get_match_score_diff(match["match_id"], id)
+                if match["score_posted"]
+                else None,
+                "players": match[f"player_dist{i}"][j]
+                if match[f"player_dist{i}"][j:]
+                else match["players"],
+            }
+            for j, id in enumerate(match[f"clans{i}_ids"])
+        ]
+
+        del match[f"clans{i}_ids"]
+        del match[f"player_dist{i}"]
+
+    return match
+
 
 ###############################################
 #                   PC APIs                   #
 ###############################################
 
+
 class MatchApi(Resource):
     def get(self, match_id):
         try:
-            match = Match.objects.get(match_id=match_id)
-            return get_response(match)
+            match: Match = Match.objects.get(match_id=match_id)
+
+            return get_response(transform_match(match))
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error getting match from database, terminated with error: {e}", 500
+            )
 
     @admin_required()
     def put(self, match_id):
@@ -48,21 +97,31 @@ class MatchApi(Resource):
             match.validate()
             # must be a QuerySet, therefore no get()
             match_qs = Match.objects(match_id=match_id)
-            res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
+            res = match_qs.update_one(
+                upsert=True, **request.get_json(), full_result=True
+            )
             # load Match object for the logic instead of working with the QuerySet
             match = Match.objects.get(match_id=match_id)
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
-                if err is not None: raise ValueError
+                if err is not None:
+                    raise ValueError
 
             if res.raw_result.get("updatedExisting"):
-                return get_response({"message": f"replaced match with id: {match_id}"}, 200)
+                return get_response(
+                    {"message": f"replaced match with id: {match_id}"}, 200
+                )
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except ValueError as err:
-            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
+            return handle_error(
+                f"{err} - error updating match with id: {match_id}, calculations went wrong",
+                400,
+            )
         except RuntimeError:
-            return handle_error(f"error updating match - a clan cannot play against itself", 400)
+            return handle_error(
+                f"error updating match - a clan cannot play against itself", 400
+            )
         else:
             return get_response({"message": f"created match with id: {match_id}"}, 201)
 
@@ -79,7 +138,8 @@ class MatchApi(Resource):
 
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match)
-                if err is not None: raise ValueError
+                if err is not None:
+                    raise ValueError
                 print("match confirmed")
 
             claims = get_jwt()
@@ -93,11 +153,19 @@ class MatchApi(Resource):
                     print("match and scores recalculated")
 
         except DoesNotExist:
-            return handle_error(f"error updating match in database, match not found by oid: {match_id}", 404)
+            return handle_error(
+                f"error updating match in database, match not found by oid: {match_id}",
+                404,
+            )
         except ValueError as err:
-            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
+            return handle_error(
+                f"{err} - error updating match with id: {match_id}, calculations went wrong",
+                400,
+            )
         except RuntimeError:
-            return handle_error(f"error updating match - a clan cannot play against itself", 400)
+            return handle_error(
+                f"error updating match - a clan cannot play against itself", 400
+            )
         else:
             return get_response("", 204)
 
@@ -120,7 +188,10 @@ class MatchApi(Resource):
             if not is_admin and not is_teammanager:
                 return handle_error("object does not exist", 404)
 
-            if not match.can_be_deleted(get_jwt_identity(), claims["clans"]) and not is_admin:
+            if (
+                not match.can_be_deleted(get_jwt_identity(), claims["clans"])
+                and not is_admin
+            ):
                 return handle_error("object does not exist", 404)
 
             match.delete()
@@ -130,7 +201,9 @@ class MatchApi(Resource):
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
-            return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error deleting match in database, terminated with error: {e}", 500
+            )
         else:
             return get_response("", 204)
 
@@ -178,37 +251,50 @@ class MatchesApi(Resource):
             if not empty(date_to):
                 date_to = datetime(*[int(d) for d in date_to.split("-")])
 
-            fields = select.split(',') if select is not None else []
+            fields = select.split(",") if select is not None else []
 
             # filter through the documents by assigning the intersection (&=)
             # for every query parameter one by one
             filter = Q()
 
-            if not empty(match_id): filter &= Q(match_id__icontains=match_id)
+            if not empty(match_id):
+                filter &= Q(match_id__icontains=match_id)
             for id in clan_ids:
-                if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
-            if not empty(caps): filter &= (Q(caps1=caps) | Q(caps2=caps))
-            if not empty(caps_from): filter &= (Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from))
-            if not empty(map): filter &= Q(map__icontains=map)
-            if not empty(duration_from): filter &= Q(duration__gte=duration_from)
-            if not empty(duration_to): filter &= Q(duration__lte=duration_to)
-            if not empty(factor): filter &= Q(factor=factor)
-            if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
-            if not empty(event): filter &= Q(event__icontains=event)
+                if not empty(id):
+                    filter &= Q(clans1_ids=id) | Q(clans2_ids=id)
+            if not empty(caps):
+                filter &= Q(caps1=caps) | Q(caps2=caps)
+            if not empty(caps_from):
+                filter &= Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from)
+            if not empty(map):
+                filter &= Q(map__icontains=map)
+            if not empty(duration_from):
+                filter &= Q(duration__gte=duration_from)
+            if not empty(duration_to):
+                filter &= Q(duration__lte=duration_to)
+            if not empty(factor):
+                filter &= Q(factor=factor)
+            if not empty(conf):
+                filter &= Q(conf1=conf) | Q(conf2=conf)
+            if not empty(event):
+                filter &= Q(event__icontains=event)
             if not empty(side):
                 if len(clan_ids) > 0:
                     # if a side has been specified, the clan id must be on that side
                     cond1 = Q(clans1_ids=str(clan_ids[0])) & Q(side1__iexact=side)
                     cond2 = Q(clans2_ids=str(clan_ids[0])) & Q(side2__iexact=side)
-                    filter &= (cond1 | cond2)
+                    filter &= cond1 | cond2
                 else:
                     raise BadRequest("missing clan id")
 
-            if not empty(date): filter &= Q(date=date)
+            if not empty(date):
+                filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
             # edit: done
-            if not empty(date_from): filter &= Q(date__gte=date_from)
-            if not empty(date_to): filter &= Q(date__lte=date_to)
+            if not empty(date_from):
+                filter &= Q(date__gte=date_from)
+            if not empty(date_to):
+                filter &= Q(date__lte=date_to)
 
             filtered = Match.objects(filter)
             limited = filtered.only(*fields).limit(limit).skip(offset)
@@ -223,16 +309,24 @@ class MatchesApi(Resource):
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
-            return handle_error(f"error getting matches, terminated with error: {e}", 500)
+            return handle_error(
+                f"error getting matches, terminated with error: {e}", 500
+            )
         else:
-            return get_response({
-                'matches': json.loads(matches.to_json()),
-                'meta': {
-                    'count': matches.count(True),
-                    'offset': offset,
-                    'total_count': filtered.count(False),
-                },
-            })
+            print(len(json.loads(matches.to_json())))
+            return get_response(
+                {
+                    "matches": [
+                        transform_match(match)
+                        for match in json.loads(matches.to_json())
+                    ],
+                    "meta": {
+                        "count": matches.count(True),
+                        "offset": offset,
+                        "total_count": filtered.count(False),
+                    },
+                }
+            )
 
     # add new match
     @admin_required()
@@ -256,9 +350,17 @@ class MatchesApi(Resource):
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
         except Exception as e:
-            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error creating match in database, terminated with error: {e}", 500
+            )
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
+            return get_response(
+                {
+                    "match_id": match.match_id,
+                    "confirmed": not match.needs_confirmations(),
+                },
+                201,
+            )
 
 
 class MatchesNotificationApi(Resource):
@@ -267,15 +369,25 @@ class MatchesNotificationApi(Resource):
     is done using the MatchesApi match report workflow.
     """
 
-    def __clan_player_count(self, distribution: 'list[int]', clans: 'list[Clan]', player_count: int or None) -> str:
+    def __clan_player_count(
+        self, distribution: "list[int]", clans: "list[Clan]", player_count: int or None
+    ) -> str:
         if distribution:
             res = " & ".join(
-                ["**" + clan.tag + "** (" + str(distribution[i]) + ")" for i, clan in enumerate(clans)]
+                [
+                    "**" + clan.tag + "** (" + str(distribution[i]) + ")"
+                    for i, clan in enumerate(clans)
+                ]
             )
             if len(distribution) > 1:
                 res += " => " + str(sum(distribution))
         else:
-            res = " & ".join(["**" + clan.tag + "**" for clan in clans]) + "(" + player_count + ")"
+            res = (
+                " & ".join(["**" + clan.tag + "**" for clan in clans])
+                + "("
+                + player_count
+                + ")"
+            )
 
         return res
 
@@ -284,8 +396,12 @@ class MatchesNotificationApi(Resource):
         if match.type == Type.Competetive:
             event_comment = " (%s)" % match.event
 
-        axis = self.__clan_player_count(match.player_dist1, Clan.objects(id__in=match.clans1_ids), match.players)
-        allies = self.__clan_player_count(match.player_dist2, Clan.objects(id__in=match.clans2_ids), match.players)
+        axis = self.__clan_player_count(
+            match.player_dist1, Clan.objects(id__in=match.clans1_ids), match.players
+        )
+        allies = self.__clan_player_count(
+            match.player_dist2, Clan.objects(id__in=match.clans2_ids), match.players
+        )
 
         caps = "/".join(match.strongpoints)
         fields = [
@@ -298,26 +414,34 @@ class MatchesNotificationApi(Resource):
             f"Caps: {caps}",
         ]
         if match.stream_url:
-            fields.append(f"Stream: [{urlparse(match.stream_url).hostname}]({match.stream_url})")
+            fields.append(
+                f"Stream: [{urlparse(match.stream_url).hostname}]({match.stream_url})"
+            )
 
         return {
-            "embeds": [{
-                "color": 16750848,
-                "author": {
-                    "name": posting_user["friendly_name"],
-                    "icon_url": posting_user["avatar"],
-                },
-                "title": match.match_id,
-                "url": "https://helo-system.de/matches/" + match.match_id,
-                "description": "\n".join(fields),
-            }],
+            "embeds": [
+                {
+                    "color": 16750848,
+                    "author": {
+                        "name": posting_user["friendly_name"],
+                        "icon_url": posting_user["avatar"],
+                    },
+                    "title": match.match_id,
+                    "url": "https://helo-system.de/matches/" + match.match_id,
+                    "description": "\n".join(fields),
+                }
+            ],
         }
 
     @admin_required()
     def post(self):
         try:
             match = Match(**request.get_json())
-            if match.players > 100 or sum(match.player_dist1) > 50 or sum(match.player_dist2) > 50:
+            if (
+                match.players > 100
+                or sum(match.player_dist1) > 50
+                or sum(match.player_dist2) > 50
+            ):
                 return handle_error("too many players", 400)
             claims = get_jwt()
             if Role.Admin.value not in claims["roles"]:
@@ -330,11 +454,14 @@ class MatchesNotificationApi(Resource):
                         team_manager_of_one_clan = True
                         break
                 if not team_manager_of_one_clan:
-                    return handle_error("you're not a teammanager of one of the clans of this match", 403)
+                    return handle_error(
+                        "you're not a teammanager of one of the clans of this match",
+                        403,
+                    )
 
             res = requests.post(
                 current_app.config["DISCORD_REPORT_MATCH_WEBHOOK"],
-                json=self.__build_webhook_payload(match, claims)
+                json=self.__build_webhook_payload(match, claims),
             )
             if res.status_code != 204:
                 return handle_error(f"error while posting result: {res.text}", 500)
@@ -343,9 +470,12 @@ class MatchesNotificationApi(Resource):
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
         except Exception as e:
-            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error creating match in database, terminated with error: {e}", 500
+            )
         else:
             return get_response("", 201)
+
 
 ###############################################
 #                CONSOLE APIs                 #
@@ -363,11 +493,14 @@ class ConsoleMatchApi(Resource):
         except AttributeError:
             return handle_error(
                 f"multiple errors: You did not provide a valid object id, instead I looked for a match with the match_id '{match_id}', but couldn't find any.",
-                400)
+                400,
+            )
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
-            return handle_error(f"error getting match from database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error getting match from database, terminated with error: {e}", 500
+            )
 
     # update match by object id
     @admin_required()
@@ -378,22 +511,32 @@ class ConsoleMatchApi(Resource):
             match.validate()
             # must be a QuerySet, therefore no get()
             match_qs = ConsoleMatch.objects(match_id=match_id)
-            res = match_qs.update_one(upsert=True, **request.get_json(), full_result=True)
+            res = match_qs.update_one(
+                upsert=True, **request.get_json(), full_result=True
+            )
             # load Match object for the logic instead of working with the QuerySet
             match = ConsoleMatch.objects.get(match_id=match_id)
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match, console=True)
-                if err is not None: raise ValueError
+                if err is not None:
+                    raise ValueError
                 print("match confirmed")
 
             if res.raw_result.get("updatedExisting"):
-                return get_response({"message": f"replaced match with id: {match_id}"}, 200)
+                return get_response(
+                    {"message": f"replaced match with id: {match_id}"}, 200
+                )
         except ValidationError as e:
             return handle_error(f"validation failed: {e}", 400)
         except ValueError as err:
-            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
+            return handle_error(
+                f"{err} - error updating match with id: {match_id}, calculations went wrong",
+                400,
+            )
         except RuntimeError:
-            return handle_error(f"error updating match - a clan cannot play against itself", 400)
+            return handle_error(
+                f"error updating match - a clan cannot play against itself", 400
+            )
         else:
             return get_response({"message": f"created match with id: {match_id}"}, 201)
 
@@ -410,7 +553,8 @@ class ConsoleMatchApi(Resource):
 
             if not match.needs_confirmations() and not match.score_posted:
                 err = calc_scores(match, console=True)
-                if err is not None: raise ValueError
+                if err is not None:
+                    raise ValueError
                 print("match confirmed")
 
             claims = get_jwt()
@@ -424,11 +568,19 @@ class ConsoleMatchApi(Resource):
                     print("match and scores recalculated")
 
         except DoesNotExist:
-            return handle_error(f"error updating match in database, match not found by oid: {match_id}", 404)
+            return handle_error(
+                f"error updating match in database, match not found by oid: {match_id}",
+                404,
+            )
         except ValueError as err:
-            return handle_error(f"{err} - error updating match with id: {match_id}, calculations went wrong", 400)
+            return handle_error(
+                f"{err} - error updating match with id: {match_id}, calculations went wrong",
+                400,
+            )
         except RuntimeError:
-            return handle_error(f"error updating match - a clan cannot play against itself", 400)
+            return handle_error(
+                f"error updating match - a clan cannot play against itself", 400
+            )
         else:
             return get_response("", 204)
 
@@ -444,7 +596,9 @@ class ConsoleMatchApi(Resource):
         except DoesNotExist:
             return handle_error("object does not exist", 404)
         except Exception as e:
-            return handle_error(f"error deleting match in database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error deleting match in database, terminated with error: {e}", 500
+            )
         else:
             return get_response("", 204)
 
@@ -493,35 +647,60 @@ class ConsoleMatchesApi(Resource):
             if not empty(date_to):
                 date_to = datetime(*[int(d) for d in date_to.split("-")])
 
-            fields = select.split(',') if select is not None else []
+            fields = select.split(",") if select is not None else []
 
             # filter through the documents by assigning the intersection (&=)
             # for every query parameter one by one
             filter = Q()
 
-            if not empty(match_id): filter &= Q(match_id__icontains=match_id)
+            if not empty(match_id):
+                filter &= Q(match_id__icontains=match_id)
             for id in clan_ids:
-                if not empty(id): filter &= (Q(clans1_ids=id) | Q(clans2_ids=id))
-            if not empty(caps): filter &= (Q(caps1=caps) | Q(caps2=caps))
-            if not empty(caps_from): filter &= (Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from))
-            if not empty(map): filter &= Q(map__icontains=map)
-            if not empty(duration_from): filter &= Q(duration__gte=duration_from)
-            if not empty(duration_to): filter &= Q(duration__lte=duration_to)
-            if not empty(factor): filter &= Q(factor=factor)
-            if not empty(conf): filter &= (Q(conf1=conf) | Q(conf2=conf))
-            if not empty(event): filter &= Q(event__icontains=event)
+                if not empty(id):
+                    filter &= Q(clans1_ids=id) | Q(clans2_ids=id)
+            if not empty(caps):
+                filter &= Q(caps1=caps) | Q(caps2=caps)
+            if not empty(caps_from):
+                filter &= Q(caps1__gte=caps_from) | Q(caps2__gte=caps_from)
+            if not empty(map):
+                filter &= Q(map__icontains=map)
+            if not empty(duration_from):
+                filter &= Q(duration__gte=duration_from)
+            if not empty(duration_to):
+                filter &= Q(duration__lte=duration_to)
+            if not empty(factor):
+                filter &= Q(factor=factor)
+            if not empty(conf):
+                filter &= Q(conf1=conf) | Q(conf2=conf)
+            if not empty(event):
+                filter &= Q(event__icontains=event)
 
-            if not empty(date): filter &= Q(date=date)
+            if not empty(date):
+                filter &= Q(date=date)
             # TODO: lesbares Datumsformat bei Anfrage mit Konvertierung
             # edit: done
-            if not empty(date_from): filter &= Q(date__gte=date_from)
-            if not empty(date_to): filter &= Q(date__lte=date_to)
+            if not empty(date_from):
+                filter &= Q(date__gte=date_from)
+            if not empty(date_to):
+                filter &= Q(date__lte=date_to)
 
             if not empty(desc) and desc:
-                matches = ConsoleMatch.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"-{sort_by}")
+                matches = (
+                    ConsoleMatch.objects(filter)
+                    .only(*fields)
+                    .limit(limit)
+                    .skip(offset)
+                    .order_by(f"-{sort_by}")
+                )
                 return get_response(matches)
 
-            matches = ConsoleMatch.objects(filter).only(*fields).limit(limit).skip(offset).order_by(f"+{sort_by}")
+            matches = (
+                ConsoleMatch.objects(filter)
+                .only(*fields)
+                .limit(limit)
+                .skip(offset)
+                .order_by(f"+{sort_by}")
+            )
 
         except BadRequest as e:
             # TODO: better error response
@@ -529,7 +708,9 @@ class ConsoleMatchesApi(Resource):
         except LookUpError:
             return handle_error(f"cannot resolve field 'select={select}'", 400)
         except Exception as e:
-            return handle_error(f"error getting matches, terminated with error: {e}", 500)
+            return handle_error(
+                f"error getting matches, terminated with error: {e}", 500
+            )
         else:
             return get_response(matches)
 
@@ -555,6 +736,14 @@ class ConsoleMatchesApi(Resource):
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
         except Exception as e:
-            return handle_error(f"error creating match in database, terminated with error: {e}", 500)
+            return handle_error(
+                f"error creating match in database, terminated with error: {e}", 500
+            )
         else:
-            return get_response({"match_id": match.match_id, "confirmed": not match.needs_confirmations()}, 201)
+            return get_response(
+                {
+                    "match_id": match.match_id,
+                    "confirmed": not match.needs_confirmations(),
+                },
+                201,
+            )
