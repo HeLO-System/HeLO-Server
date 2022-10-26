@@ -31,18 +31,33 @@ from rest.users import DiscordLogin, DiscordCallback, LegacyLoginApi
 
 
 def initialize_routes(api, discord):
+    # Shared
     # Auth
     api.add_resource(
-        DiscordLogin, "/auth/discord/login", resource_class_kwargs={"discord": discord}
+        DiscordLogin,
+        "/auth/discord/login",
+        "/console/auth/discord/login",
+        resource_class_kwargs={"discord": discord},
     )
     api.add_resource(
         DiscordCallback,
         "/auth/discord/callback",
+        "/console/auth/discord/callback",
         resource_class_kwargs={"discord": discord},
     )
-    api.add_resource(LegacyLoginApi, "/auth/login")
-    api.add_resource(DiscordRoleApi, "/role_id/<rid>")
+    api.add_resource(LegacyLoginApi, "/auth/login", "/console/auth/login")
 
+    # Matches
+    api.add_resource(
+        MatchesNotificationApi,
+        "/matches-notifications",
+        "/console/matches-notifications",
+    )
+
+    # Search
+    api.add_resource(SearchApi, "/search", "/console/search")
+
+    # PC
     # Clans
     api.add_resource(ClanApi, "/clan/<oid>")
     api.add_resource(ClansApi, "/clans")
@@ -51,7 +66,6 @@ def initialize_routes(api, discord):
     # Matches
     api.add_resource(MatchApi, "/match/<match_id>")
     api.add_resource(MatchesApi, "/matches")
-    api.add_resource(MatchesNotificationApi, "/matches-notifications")
 
     # Events
     api.add_resource(EventApi, "/event/<oid>")
@@ -64,28 +78,12 @@ def initialize_routes(api, discord):
     # Simulations
     api.add_resource(SimulationsApi, "/simulations")
 
-    # Search
-    api.add_resource(SearchApi, "/search")
-
     # Statistics
     api.add_resource(WinrateApi, "/statistics/winrate/<oid>")
     api.add_resource(ResultTypesApi, "/statistics/result_types/<oid>")
     api.add_resource(PerformanceRatingApi, "/statistics/pr/<oid>")
 
     # console
-    # Auth
-    api.add_resource(
-        DiscordLogin,
-        "/console/auth/discord/login",
-        resource_class_kwargs={"discord": discord},
-    )
-    api.add_resource(
-        DiscordCallback,
-        "/console/auth/discord/callback",
-        resource_class_kwargs={"discord": discord},
-    )
-    api.add_resource(LegacyLoginApi, "/console/auth/login")
-
     # Clans
     api.add_resource(ConsoleClanApi, "/console/clan/<oid>")
     api.add_resource(ConsoleClansApi, "/console/clans")
@@ -94,7 +92,6 @@ def initialize_routes(api, discord):
     # Matches
     api.add_resource(ConsoleMatchApi, "/console/match/<match_id>")
     api.add_resource(ConsoleMatchesApi, "/console/matches")
-    api.add_resource(MatchesNotificationApi, "/console/matches-notifications")
 
     # Events
 
@@ -104,9 +101,6 @@ def initialize_routes(api, discord):
 
     # Simulations
     api.add_resource(ConsoleSimulationsApi, "/console/simulations")
-
-    # Search
-    api.add_resource(SearchApi, "/console/search")
 
     # Statistics
     api.add_resource(ConsoleWinrateApi, "/console/statistics/winrate/<oid>")
