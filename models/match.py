@@ -2,13 +2,10 @@
 first level class
 """
 import enum
-from email.policy import default
 import json
-from random import choices
 
+from database.db import CustomQuerySet, db
 from numpy import require
-
-from database.db import db, CustomQuerySet
 
 
 class Type(enum.Enum):

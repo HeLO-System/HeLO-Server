@@ -1,12 +1,12 @@
 """
 second level class
 """
+import json
 from enum import Enum
 
-from flask_bcrypt import generate_password_hash, check_password_hash
-import json
+from database.db import CustomQuerySet, db
+from flask_bcrypt import check_password_hash, generate_password_hash
 
-from database.db import db, CustomQuerySet
 
 class Role(Enum):
     User = 'USER'
