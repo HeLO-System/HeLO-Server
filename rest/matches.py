@@ -255,6 +255,8 @@ class MatchesApi(Resource):
             return handle_error(f"match already exists in database", 400)
         except ValidationError as e:
             return handle_error(f"required field is empty: {e}")
+        except ValueError as e:
+            return handle_error(f"request is invalid: {e}")
         except Exception as e:
             return handle_error(f"error creating match in database, terminated with error: {e}", 500)
         else:
