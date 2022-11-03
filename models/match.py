@@ -2,11 +2,7 @@
 first level class
 """
 import enum
-from email.policy import default
 import json
-from random import choices
-
-from numpy import require
 
 from database.db import db, CustomQuerySet
 
@@ -27,29 +23,29 @@ class Match(db.Document):
     player_dist1 = db.ListField(db.IntField())
     player_dist2 = db.ListField(db.IntField())
     # allies or axis
-    side1        = db.StringField(choices=('Axis', 'Allies'))
-    side2        = db.StringField(choices=('Axis', 'Allies'))
+    side1 = db.StringField(choices=('Axis', 'Allies'))
+    side2 = db.StringField(choices=('Axis', 'Allies'))
     # strong points hold at the end of the game
-    caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
-    caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
+    caps1 = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
+    caps2 = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
-    players      = db.IntField()
-    map          = db.StringField(required=True)
+    players = db.IntField()
+    map = db.StringField(required=True)
     strongpoints = db.ListField(db.StringField(), max_length=5)
-    date         = db.DateTimeField(required=True)
+    date = db.DateTimeField(required=True)
     # how long the game lasted, max is 90 min
-    duration     = db.IntField()
+    duration = db.IntField()
     # competitive factor, see HeLO calculations
-    factor       = db.FloatField(default=1.0)
+    factor = db.FloatField(default=1.0)
     # name of the tournament, of just a training match
-    event        = db.StringField()
+    event = db.StringField()
     # confirmation, very important
     # match must be confirmed from both sides (representatives) in order to
     # take the match into account
     # user id of the user who confirmed the match for clan1
-    conf1        = db.StringField()
+    conf1 = db.StringField()
     # user id of the user who confirmed the match for clan2
-    conf2        = db.StringField()
+    conf2 = db.StringField()
     # flag to check whether corresponding score objects to the match exist or not
     score_posted = db.BooleanField()
     # reserved for admins, necessary to start a recalculate process for this match
@@ -96,4 +92,5 @@ class Match(db.Document):
             if r in self.clans2_ids:
                 is_clan2_member = True
 
-        return not self.score_posted and (is_clan1_member or is_clan2_member or self.conf1 == user_id and self.conf2 == user_id)
+        return not self.score_posted and (
+                    is_clan1_member or is_clan2_member or self.conf1 == user_id or self.conf2 == user_id)
