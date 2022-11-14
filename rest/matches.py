@@ -86,7 +86,7 @@ class MatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate:
-                if not claims["is_admin"]:
+                if not "ADMIN" in claims.get("roles"):
                     raise OperationError
                 else:
                     start_recalculation(match)
@@ -417,7 +417,7 @@ class ConsoleMatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate:
-                if not claims["is_admin"]:
+                if not "ADMIN" in claims.get("roles"):
                     raise OperationError
                 else:
                     start_recalculation(match, console=True)
