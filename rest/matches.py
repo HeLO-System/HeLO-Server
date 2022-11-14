@@ -86,7 +86,7 @@ class MatchApi(Resource):
             # if an admin starts a recalculation process
             # it's the only way to bypass the score_posted restriction
             if match.recalculate:
-                if not "ADMIN" in claims.get("roles"):
+                if "ADMIN" not in claims.get("roles"):
                     raise OperationError
                 else:
                     start_recalculation(match)
@@ -281,7 +281,7 @@ class MatchesNotificationApi(Resource):
 
     def __build_webhook_payload(self, match: Match, posting_user: dict) -> dict:
         event_comment = ""
-        if match.type == Type.Competetive:
+        if match.type == Type.Competitive:
             event_comment = " (%s)" % match.event
 
         axis = self.__clan_player_count(match.player_dist1, Clan.objects(id__in=match.clans1_ids), match.players)
