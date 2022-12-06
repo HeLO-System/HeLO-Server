@@ -88,12 +88,15 @@ def get_coop_scores(clan_scores1: list, clan_scores2: list, caps1: int, caps2: i
     # TODO: known issue: a coop game is also a game where only one clan plays against
     # two or more clans, therefore the clan playing alone will be weighted with a = 40
     # regardless of its number of games
-    a1, a2 = 40, 40
-    # temporary fix: if there is a clan in the cooperation with > 30 games, take 20
+    # a1, a2 are not the factors, but the NUMBER OF MATCHES! (important, that caused a bug
+    # in the past)
+    a1, a2 = 0, 0
+    # take the maximum number of matches for each cooperation, to prevent a clan
+    # from farming points with the help of a new clan
     if num_matches1 is not None:
-        a1 = min([40 if num <= 30 else 20 for num in num_matches1])
+        a1 = max(num_matches1)
     if num_matches2 is not None:
-        a2 = min([40 if num <= 30 else 20 for num in num_matches2])
+        a2 = max(num_matches2)
 
     # performs normal average
     weights1 = np.ones(len(clan_scores1)) / len(clan_scores1)
