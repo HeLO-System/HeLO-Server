@@ -43,3 +43,4 @@ virtualenv==20.16.5
 Werkzeug==2.0.2
 WTForms==3.0.0
 Flask-Discord==0.1.69
+pytest==7.2.0
