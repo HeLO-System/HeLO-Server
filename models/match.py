@@ -33,7 +33,7 @@ class Match(db.Document):
     caps1        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     caps2        = db.IntField(required=True, choices=(0, 1, 2, 3, 4, 5))
     # number of players on each side (assuming both teams had the same number of players)
-    players      = db.IntField()
+    players      = db.IntField(required=True)
     map          = db.StringField(required=True)
     strongpoints = db.ListField(db.StringField(), max_length=5)
     date         = db.DateTimeField(required=True)
