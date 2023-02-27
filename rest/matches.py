@@ -246,8 +246,7 @@ class MatchesApi(Resource):
 
             claims = get_jwt()
             if Role.Admin.value in claims["roles"]:
-                # edit: removed to ensure correct reporting of match results
-                #match.conf2 = get_jwt_identity()
+                match.conf2 = get_jwt_identity()
                 err = calc_scores(match)
                 if err is not None:
                     raise ValueError
