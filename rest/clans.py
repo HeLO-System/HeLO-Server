@@ -33,15 +33,15 @@ class ClanApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            try:
-                clan = Clan.objects.get(id=oid)
-                # causes problems in frontend, removed for the time being
-                # name = "-".join(clan.name.split())
-                # return redirect('/clan/' + name)
-                return get_response(clan)
-            except ValidationError:
-                clan = Clan.objects.search_text(oid).first()
-                return get_response(clan)
+            # try:
+            clan = Clan.objects.get(id=oid)
+            # causes problems in frontend, removed for the time being
+            # name = "-".join(clan.name.split())
+            # return redirect('/clan/' + name)
+            return get_response(clan)
+            # except ValidationError:
+            #     clan = Clan.objects.search_text(oid).first()
+            #     return get_response(clan)
 
         except AttributeError:
             return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a clan with the name '{oid}', but couldn't find any.", 400)
@@ -256,15 +256,15 @@ class ConsoleClanApi(Resource):
     # get by object id
     def get(self, oid):
         try:
-            try:
-                clan = ConsoleClan.objects.get(id=oid)
-                # causes problems in frontend, removed for the time being
-                # name = "-".join(clan.name.split())
-                # return redirect('/clan/' + name)
-                return get_response(clan)
-            except ValidationError:
-                clan = ConsoleClan.objects.search_text(oid).first()
-                return get_response(clan)
+            # try:
+            clan = ConsoleClan.objects.get(id=oid)
+            # causes problems in frontend, removed for the time being
+            # name = "-".join(clan.name.split())
+            # return redirect('/clan/' + name)
+            return get_response(clan)
+            # except ValidationError:
+            #     clan = ConsoleClan.objects.search_text(oid).first()
+            #     return get_response(clan)
 
         except AttributeError:
             return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a clan with the name '{oid}', but couldn't find any.", 400)
