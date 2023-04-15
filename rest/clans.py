@@ -1,5 +1,6 @@
 # rest/clans.py
 from datetime import datetime
+import bson
 
 from flask import request
 from flask_restful import Resource
@@ -253,11 +254,14 @@ class DiscordRoleApi(Resource):
 
 class ConsoleClanApi(Resource):
     
-    # get by object id
-    def get(self, oid):
+    # get by object id or clan tag
+    def get(self, unique_identifier):
         try:
             # try:
-            clan = ConsoleClan.objects.get(id=oid)
+            if bson.objectid.ObjectId.is_valid(unique_identifier):
+                clan = ConsoleClan.objects.get(id=unique_identifier)
+            else:
+                clan = ConsoleClan.objects.get(tag=unique_identifier)
             # causes problems in frontend, removed for the time being
             # name = "-".join(clan.name.split())
             # return redirect('/clan/' + name)

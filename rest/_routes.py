@@ -85,7 +85,7 @@ def initialize_routes(api, discord):
 
     # console
     # Clans
-    api.add_resource(ConsoleClanApi, "/console/clan/<oid>")
+    api.add_resource(ConsoleClanApi, "/console/clan/<unique_identifier>") # unique identifier can be Object ID or clan tag
     api.add_resource(ConsoleClansApi, "/console/clans")
     api.add_resource(ConsoleScoreHistoryApi, "/console/clan/<oid>/score_history")
 
