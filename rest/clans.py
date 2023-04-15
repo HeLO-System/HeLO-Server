@@ -271,11 +271,11 @@ class ConsoleClanApi(Resource):
             #     return get_response(clan)
 
         except AttributeError:
-            return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a clan with the name '{oid}', but couldn't find any.", 400)
+            return handle_error(f"multiple errors: You did not provide a valid object id, instead I looked for a clan with the name '{unique_identifier}', but couldn't find any.", 400)
         except DoesNotExist:
                 return handle_error("object does not exist", 404)
         except Exception as e:
-            return handle_error(f"error getting clan from database, clan not found by oid: {oid}, terminated with error: {e}", 500)
+            return handle_error(f"error getting clan from database, clan not found by oid: {unique_identifier}, terminated with error: {e}", 500)
 
 
     # update clan by object id
